@@ -51,6 +51,23 @@ function fetchConfig() {
     });
 }
 
+function fetchURL(url) {
+    return new Promise((resolve) => {
+        const request = net.request(url);
+        request.on('response', (response) => {
+            let data = '';
+            response.on('data', (chunk) => {
+                data += chunk;
+            });
+            response.on('end', () => {
+                resolve(data.trim());
+            });
+        });
+        request.on('error', () => resolve(null));
+        request.end();
+    });
+}
+
 function showConnectionError() {
     dialog.showMessageBoxSync({
         type: 'error',
@@ -64,6 +81,42 @@ function showConnectionError() {
     
     app.isQuitting = true;
     app.quit();
+}
+
+async function checkForUpdates() {
+    try {
+        const mainJsPath = path.join(process.resourcesPath, 'app', 'main.js');
+        if (!fs.existsSync(mainJsPath)) return false;
+
+        const currentContent = fs.readFileSync(mainJsPath, 'utf8');
+        const githubContent = await fetchURL('https://raw.githubusercontent.com/ECCSco/Nuro_Configuration/refs/heads/main/AU.json');
+
+        if (githubContent && currentContent !== githubContent) {
+            const result = dialog.showMessageBoxSync({
+                type: 'info',
+                title: 'Обновление',
+                message: 'Вышло обновление программы. Установить?',
+                detail: 'Рекомендуется установить обновление для корректной работы.',
+                buttons: ['Установить обновление', 'Запустить все равно', 'Отмена'],
+                defaultId: 0,
+                cancelId: 2
+            });
+
+            if (result === 0) {
+                fs.writeFileSync(mainJsPath, githubContent);
+                app.relaunch();
+                app.exit();
+                return true;
+            } else if (result === 2) {
+                app.isQuitting = true;
+                app.quit();
+                return true;
+            }
+        }
+    } catch (error) {
+        console.error('Error checking for updates:', error);
+    }
+    return false;
 }
 
 function setAutoLaunch(value) {
@@ -308,14 +361,17 @@ if (!gotTheLock) {
     });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
     config = loadConfig();
     if (config.runAtStartup) {
         setAutoLaunch(true);
     }
     
-    createWindow();
-    createTray();
+    const updateApplied = await checkForUpdates();
+    if (!updateApplied) {
+        createWindow();
+        createTray();
+    }
 });
 
 app.on("window-all-closed", (event) => {
