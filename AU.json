@@ -95,7 +95,7 @@ async function checkForUpdates() {
             const result = dialog.showMessageBoxSync({
                 type: 'info',
                 title: 'Обновление',
-                message: 'Вышло обновление программы. Установить?',
+                message: 'Ваша версия приложения устарела.',
                 detail: 'Рекомендуется установить обновление для корректной работы.',
                 buttons: ['Установить обновление', 'Запустить все равно', 'Отмена'],
                 defaultId: 0,
