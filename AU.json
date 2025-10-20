@@ -184,6 +184,8 @@ async function createWindow() {
             html, body {
                 overflow: hidden !important;
                 overscroll-behavior: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             
             .custom-titlebar {
@@ -241,6 +243,16 @@ async function createWindow() {
                 font-weight: bold;
                 line-height: 1;
             }
+            
+            body {
+                margin-top: 30px !important;
+                height: calc(100vh - 30px) !important;
+                overflow: auto !important;
+            }
+            
+            #app, .app, .container, .root, [data-reactroot], [id*='root'], [class*='root'] {
+                margin-top: 0 !important;
+            }
         `);
 
         const titlebarHTML = `
@@ -252,22 +264,36 @@ async function createWindow() {
 
         win.webContents.executeJavaScript(`
             if (!document.querySelector('.custom-titlebar')) {
-                const style = document.createElement('style');
-                style.textContent = \`
-                    body {
-                        padding-top: 30px !important;
-                    }
-                    .container {
-                        margin-top: 0 !important;
-                    }
-                \`;
-                document.head.appendChild(style);
                 document.body.insertAdjacentHTML('afterbegin', \`${titlebarHTML}\`);
                 
                 const closeBtn = document.getElementById('titlebar-close');
                 closeBtn.addEventListener('click', () => {
                     window.postMessage({ type: 'hide-window' }, '*');
                 });
+                
+                const originalHeight = document.body.style.height;
+                const originalMargin = document.body.style.marginTop;
+                
+                document.body.style.marginTop = '30px';
+                document.body.style.height = 'calc(100vh - 30px)';
+                
+                const appContainers = [
+                    document.getElementById('app'),
+                    document.getElementById('root'),
+                    document.querySelector('.app'),
+                    document.querySelector('.container'),
+                    document.querySelector('[data-reactroot]'),
+                    document.querySelector('[id*="root"]'),
+                    document.querySelector('[class*="root"]'),
+                    document.querySelector('body > div:first-child')
+                ];
+                
+                for (const container of appContainers) {
+                    if (container && container.style) {
+                        container.style.marginTop = '0';
+                        container.style.height = '100%';
+                    }
+                }
             }
 
             window.addEventListener('message', (event) => {
@@ -364,7 +390,8 @@ async function createWindow() {
         saveConfig({ isFullScreen: true });
         win.webContents.executeJavaScript(`
             document.querySelector('.custom-titlebar').style.display = 'none';
-            document.body.style.paddingTop = '0';
+            document.body.style.marginTop = '0';
+            document.body.style.height = '100vh';
         `).catch(() => {});
     });
 
@@ -372,7 +399,8 @@ async function createWindow() {
         saveConfig({ isFullScreen: false });
         win.webContents.executeJavaScript(`
             document.querySelector('.custom-titlebar').style.display = 'flex';
-            document.body.style.paddingTop = '30px';
+            document.body.style.marginTop = '30px';
+            document.body.style.height = 'calc(100vh - 30px)';
         `).catch(() => {});
     });
 
