@@ -160,8 +160,11 @@ async function createWindow() {
         },
         show: false,
         opacity: 0,
-        minWidth: 400,
-        minHeight: 600
+        minWidth: 500,
+        minHeight: 400,
+        titleBarStyle: 'hidden',
+        frame: false,
+        backgroundColor: '#000000'
     });
 
     if (config.isFullScreen) {
@@ -238,6 +241,13 @@ function createTray() {
 
     const contextMenu = Menu.buildFromTemplate([
         {
+            label: 'Открыть Nuro',
+            click: () => {
+                showWindow();
+            }
+        },
+        { type: 'separator' },
+        {
             label: 'Запускать при запуске системы',
             type: 'checkbox',
             checked: config.runAtStartup || false,
@@ -253,6 +263,7 @@ function createTray() {
                 toggleAlwaysOnTop();
             }
         },
+        { type: 'separator' },
         {
             label: 'Выйти',
             click: () => {
@@ -284,6 +295,13 @@ function toggleAlwaysOnTop() {
 function updateTrayMenu() {
     const contextMenu = Menu.buildFromTemplate([
         {
+            label: 'Открыть Nuro',
+            click: () => {
+                showWindow();
+            }
+        },
+        { type: 'separator' },
+        {
             label: 'Запускать при запуске системы',
             type: 'checkbox',
             checked: config.runAtStartup || false,
@@ -299,6 +317,7 @@ function updateTrayMenu() {
                 toggleAlwaysOnTop();
             }
         },
+        { type: 'separator' },
         {
             label: 'Выйти',
             click: () => {
