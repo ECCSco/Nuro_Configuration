@@ -188,7 +188,7 @@ async function createWindow() {
             
             .custom-titlebar {
                 position: fixed;
-                top: -30px;
+                top: 0;
                 left: 0;
                 right: 0;
                 height: 30px;
@@ -202,11 +202,6 @@ async function createWindow() {
                 -webkit-backdrop-filter: blur(20px) saturate(1.4);
                 background: rgba(10, 25, 47, 0.85);
                 border-bottom: 1px solid rgba(100, 181, 246, 0.3);
-                transition: top 0.3s ease;
-            }
-            
-            .custom-titlebar:hover {
-                top: 0;
             }
             
             .titlebar-content {
@@ -257,6 +252,16 @@ async function createWindow() {
 
         win.webContents.executeJavaScript(`
             if (!document.querySelector('.custom-titlebar')) {
+                const style = document.createElement('style');
+                style.textContent = \`
+                    body {
+                        padding-top: 30px !important;
+                    }
+                    .container {
+                        margin-top: 0 !important;
+                    }
+                \`;
+                document.head.appendChild(style);
                 document.body.insertAdjacentHTML('afterbegin', \`${titlebarHTML}\`);
                 
                 const closeBtn = document.getElementById('titlebar-close');
@@ -359,6 +364,7 @@ async function createWindow() {
         saveConfig({ isFullScreen: true });
         win.webContents.executeJavaScript(`
             document.querySelector('.custom-titlebar').style.display = 'none';
+            document.body.style.paddingTop = '0';
         `).catch(() => {});
     });
 
@@ -366,6 +372,7 @@ async function createWindow() {
         saveConfig({ isFullScreen: false });
         win.webContents.executeJavaScript(`
             document.querySelector('.custom-titlebar').style.display = 'flex';
+            document.body.style.paddingTop = '30px';
         `).catch(() => {});
     });
 
