@@ -188,7 +188,7 @@ async function createWindow() {
             
             .custom-titlebar {
                 position: fixed;
-                top: 0;
+                top: -30px;
                 left: 0;
                 right: 0;
                 height: 30px;
@@ -196,27 +196,17 @@ async function createWindow() {
                 -webkit-app-region: drag;
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
+                justify-content: center;
                 z-index: 10000;
                 backdrop-filter: blur(20px) saturate(1.4);
                 -webkit-backdrop-filter: blur(20px) saturate(1.4);
                 background: rgba(10, 25, 47, 0.85);
                 border-bottom: 1px solid rgba(100, 181, 246, 0.3);
-                padding: 0 10px;
+                transition: top 0.3s ease;
             }
             
-            .titlebar-left {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                -webkit-app-region: no-drag;
-            }
-            
-            .titlebar-icon {
-                width: 16px;
-                height: 16px;
-                border-radius: 50%;
-                background: linear-gradient(135deg, #29b6f6, #4fc3f7, #81d4fa);
+            .custom-titlebar:hover {
+                top: 0;
             }
             
             .titlebar-content {
@@ -224,16 +214,12 @@ async function createWindow() {
                 font-size: 12px;
                 font-weight: 600;
                 text-shadow: 0 0 10px rgba(41, 182, 246, 0.4);
-            }
-            
-            .titlebar-controls {
-                display: flex;
-                align-items: center;
-                gap: 8px;
                 -webkit-app-region: no-drag;
             }
             
             .titlebar-close {
+                position: absolute;
+                right: 10px;
                 width: 12px;
                 height: 12px;
                 border-radius: 50%;
@@ -244,7 +230,7 @@ async function createWindow() {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                position: relative;
+                -webkit-app-region: no-drag;
             }
             
             .titlebar-close:hover {
@@ -264,40 +250,24 @@ async function createWindow() {
 
         const titlebarHTML = `
             <div class="custom-titlebar">
-                <div class="titlebar-left">
-                    <div class="titlebar-icon"></div>
-                    <div class="titlebar-content">Nuro</div>
-                </div>
-                <div class="titlebar-controls">
-                    <button class="titlebar-close" onclick="window.electronAPI?.closeWindow()"></button>
-                </div>
+                <div class="titlebar-content">Nuro</div>
+                <button class="titlebar-close" id="titlebar-close"></button>
             </div>
         `;
 
         win.webContents.executeJavaScript(`
             if (!document.querySelector('.custom-titlebar')) {
-                const style = document.createElement('style');
-                style.textContent = \`
-                    body {
-                        margin-top: 30px !important;
-                    }
-                    .container {
-                        margin-top: 0 !important;
-                    }
-                \`;
-                document.head.appendChild(style);
                 document.body.insertAdjacentHTML('afterbegin', \`${titlebarHTML}\`);
+                
+                const closeBtn = document.getElementById('titlebar-close');
+                closeBtn.addEventListener('click', () => {
+                    window.postMessage({ type: 'hide-window' }, '*');
+                });
             }
-            
-            window.electronAPI = {
-                closeWindow: () => {
-                    window.postMessage({ type: 'close-window' }, '*');
-                }
-            };
 
             window.addEventListener('message', (event) => {
-                if (event.data.type === 'close-window') {
-                    require('electron').ipcRenderer.send('close-window');
+                if (event.data.type === 'hide-window') {
+                    require('electron').ipcRenderer.send('hide-window');
                 }
             });
         `).catch(() => {});
@@ -389,7 +359,6 @@ async function createWindow() {
         saveConfig({ isFullScreen: true });
         win.webContents.executeJavaScript(`
             document.querySelector('.custom-titlebar').style.display = 'none';
-            document.body.style.marginTop = '0';
         `).catch(() => {});
     });
 
@@ -397,12 +366,11 @@ async function createWindow() {
         saveConfig({ isFullScreen: false });
         win.webContents.executeJavaScript(`
             document.querySelector('.custom-titlebar').style.display = 'flex';
-            document.body.style.marginTop = '30px';
         `).catch(() => {});
     });
 
     const { ipcMain } = require('electron');
-    ipcMain.on('close-window', () => {
+    ipcMain.on('hide-window', () => {
         if (win && !win.isDestroyed()) {
             win.hide();
         }
@@ -447,7 +415,11 @@ function createTray() {
     tray.setContextMenu(contextMenu);
 
     tray.on('click', () => {
-        toggleWindowVisibility();
+        if (win && !win.isDestroyed() && win.isVisible()) {
+            win.hide();
+        } else {
+            showWindow();
+        }
     });
 }
 
@@ -522,14 +494,6 @@ function showWindow() {
         win.focus();
     } else {
         createWindow();
-    }
-}
-
-function toggleWindowVisibility() {
-    if (win && !win.isDestroyed() && win.isVisible()) {
-        win.hide();
-    } else {
-        showWindow();
     }
 }
 
