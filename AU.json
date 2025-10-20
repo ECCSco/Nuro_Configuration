@@ -156,7 +156,9 @@ async function createWindow() {
         icon: path.join(__dirname, 'NuroIcon.ico'),
         webPreferences: {
             nodeIntegration: false,
-            contextIsolation: true
+            contextIsolation: true,
+            enableRemoteModule: false,
+            webSecurity: true
         },
         show: false,
         opacity: 0,
@@ -164,7 +166,8 @@ async function createWindow() {
         minHeight: 400,
         titleBarStyle: 'hidden',
         frame: false,
-        backgroundColor: '#000000'
+        backgroundColor: '#000000',
+        trafficLightPosition: { x: 15, y: 15 }
     });
 
     if (config.isFullScreen) {
@@ -183,7 +186,143 @@ async function createWindow() {
                 overflow: hidden !important;
                 overscroll-behavior: none !important;
             }
+            
+            .custom-titlebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 35px;
+                background: transparent;
+                -webkit-app-region: drag;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+                backdrop-filter: blur(20px) saturate(1.4);
+                -webkit-backdrop-filter: blur(20px) saturate(1.4);
+                background: rgba(10, 25, 47, 0.7);
+                border-bottom: 1px solid rgba(100, 181, 246, 0.3);
+            }
+            
+            .window-controls {
+                position: absolute;
+                right: 10px;
+                top: 50%;
+                transform: translateY(-50%);
+                -webkit-app-region: no-drag;
+                display: flex;
+                gap: 8px;
+            }
+            
+            .window-control {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                border: none;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+            
+            .window-control:hover {
+                transform: scale(1.1);
+                filter: brightness(1.2);
+            }
+            
+            .window-control.close {
+                background: #ff5f57;
+            }
+            
+            .window-control.minimize {
+                background: #ffbd2e;
+            }
+            
+            .window-control.maximize {
+                background: #28ca42;
+            }
+            
+            .titlebar-content {
+                color: rgba(255, 255, 255, 0.8);
+                font-size: 13px;
+                font-weight: 600;
+                text-shadow: 0 0 10px rgba(41, 182, 246, 0.4);
+            }
         `);
+
+        const titlebarHTML = `
+            <div class="custom-titlebar">
+                <div class="titlebar-content">Nuro</div>
+                <div class="window-controls">
+                    <button class="window-control minimize" onclick="window.electronAPI?.minimizeWindow()"></button>
+                    <button class="window-control maximize" onclick="window.electronAPI?.maximizeWindow()"></button>
+                    <button class="window-control close" onclick="window.electronAPI?.closeWindow()"></button>
+                </div>
+            </div>
+        `;
+
+        win.webContents.executeJavaScript(`
+            if (!document.querySelector('.custom-titlebar')) {
+                document.body.style.paddingTop = '35px';
+                document.body.insertAdjacentHTML('afterbegin', \`${titlebarHTML}\`);
+            }
+            
+            window.electronAPI = {
+                minimizeWindow: () => {
+                    require('electron').ipcRenderer.send('minimize-window');
+                },
+                maximizeWindow: () => {
+                    require('electron').ipcRenderer.send('maximize-window');
+                },
+                closeWindow: () => {
+                    require('electron').ipcRenderer.send('close-window');
+                }
+            };
+        `).catch(() => {});
+
+        const observerScript = `
+            let lastBackground = '';
+            
+            function updateTitlebarColor() {
+                const titlebar = document.querySelector('.custom-titlebar');
+                if (!titlebar) return;
+                
+                const bodyStyle = window.getComputedStyle(document.body);
+                const bgColor = bodyStyle.backgroundColor;
+                const bgImage = bodyStyle.backgroundImage;
+                
+                if (bgImage && bgImage !== 'none') {
+                    titlebar.style.background = 'rgba(10, 25, 47, 0.85)';
+                } else if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)') {
+                    const rgb = bgColor.match(/\\d+/g);
+                    if (rgb) {
+                        const [r, g, b] = rgb;
+                        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                        if (brightness > 128) {
+                            titlebar.style.background = 'rgba(255, 255, 255, 0.15)';
+                            titlebar.style.borderBottom = '1px solid rgba(0, 0, 0, 0.2)';
+                        } else {
+                            titlebar.style.background = 'rgba(0, 0, 0, 0.15)';
+                            titlebar.style.borderBottom = '1px solid rgba(255, 255, 255, 0.1)';
+                        }
+                    }
+                }
+            }
+            
+            const observer = new MutationObserver(updateTitlebarColor);
+            observer.observe(document.body, {
+                attributes: true,
+                attributeFilter: ['style', 'class'],
+                subtree: true,
+                childList: true
+            });
+            
+            setInterval(updateTitlebarColor, 1000);
+            updateTitlebarColor();
+        `;
+
+        setTimeout(() => {
+            win.webContents.executeJavaScript(observerScript).catch(() => {});
+        }, 1000);
         
         win.show();
         let opacity = 0;
@@ -225,10 +364,41 @@ async function createWindow() {
 
     win.on('enter-full-screen', () => {
         saveConfig({ isFullScreen: true });
+        win.webContents.executeJavaScript(`
+            document.querySelector('.custom-titlebar').style.display = 'none';
+            document.body.style.paddingTop = '0';
+        `).catch(() => {});
     });
 
     win.on('leave-full-screen', () => {
         saveConfig({ isFullScreen: false });
+        win.webContents.executeJavaScript(`
+            document.querySelector('.custom-titlebar').style.display = 'flex';
+            document.body.style.paddingTop = '35px';
+        `).catch(() => {});
+    });
+
+    const { ipcMain } = require('electron');
+    ipcMain.on('minimize-window', () => {
+        if (win && !win.isDestroyed()) {
+            win.minimize();
+        }
+    });
+
+    ipcMain.on('maximize-window', () => {
+        if (win && !win.isDestroyed()) {
+            if (win.isMaximized()) {
+                win.unmaximize();
+            } else {
+                win.maximize();
+            }
+        }
+    });
+
+    ipcMain.on('close-window', () => {
+        if (win && !win.isDestroyed()) {
+            win.hide();
+        }
     });
 }
 
@@ -240,13 +410,6 @@ function createTray() {
     tray = new Tray(createTrayIcon());
 
     const contextMenu = Menu.buildFromTemplate([
-        {
-            label: 'Открыть Nuro',
-            click: () => {
-                showWindow();
-            }
-        },
-        { type: 'separator' },
         {
             label: 'Запускать при запуске системы',
             type: 'checkbox',
@@ -294,13 +457,6 @@ function toggleAlwaysOnTop() {
 
 function updateTrayMenu() {
     const contextMenu = Menu.buildFromTemplate([
-        {
-            label: 'Открыть Nuro',
-            click: () => {
-                showWindow();
-            }
-        },
-        { type: 'separator' },
         {
             label: 'Запускать при запуске системы',
             type: 'checkbox',
