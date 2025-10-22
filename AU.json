@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -84,39 +84,83 @@ function showConnectionError() {
     app.quit();
 }
 
-async function checkForUpdates() {
+async function checkForUpdates(silent = false) {
     try {
         const mainJsPath = path.join(process.resourcesPath, 'app', 'main.js');
+        const downgradeFolder = path.join(process.resourcesPath, 'app', 'downgrade.js');
+        
         if (!fs.existsSync(mainJsPath)) return false;
 
         const currentContent = fs.readFileSync(mainJsPath, 'utf8');
         const githubContent = await fetchURL('https://raw.githubusercontent.com/ECCSco/Nuro_Configuration/refs/heads/main/AU.json');
 
         if (githubContent && currentContent !== githubContent) {
-            const result = dialog.showMessageBoxSync({
-                type: 'info',
-                title: 'Обновление',
-                message: 'Ваша версия приложения устарела.',
-                detail: 'Рекомендуется установить обновление для корректной работы.',
-                buttons: ['Установить обновление', 'Запустить все равно', 'Отмена'],
-                defaultId: 0,
-                cancelId: 2,
-                icon: path.join(__dirname, 'NuroIcon.ico')
-            });
-
-            if (result === 0) {
-                fs.writeFileSync(mainJsPath, githubContent);
-                app.relaunch();
-                app.exit();
-                return true;
-            } else if (result === 2) {
-                app.isQuitting = true;
-                app.quit();
-                return true;
+            if (!fs.existsSync(downgradeFolder)) {
+                fs.mkdirSync(downgradeFolder, { recursive: true });
             }
+            
+            const downgradePath = path.join(downgradeFolder, 'main.js');
+            fs.writeFileSync(downgradePath, currentContent);
+            
+            fs.writeFileSync(mainJsPath, githubContent);
+            
+            if (!silent) {
+                new Notification({
+                    title: 'Обновление',
+                    body: 'Программа была успешно обновлена'
+                }).show();
+            }
+            
+            app.relaunch();
+            app.exit();
+            return true;
+        } else if (!silent) {
+            new Notification({
+                title: 'Проверка обновлений',
+                body: 'Обновлений не найдено'
+            }).show();
         }
     } catch (error) {
         console.error('Error checking for updates:', error);
+        if (!silent) {
+            new Notification({
+                title: 'Ошибка',
+                body: 'Не удалось проверить обновления'
+            }).show();
+        }
+    }
+    return false;
+}
+
+async function downgradeApp() {
+    try {
+        const mainJsPath = path.join(process.resourcesPath, 'app', 'main.js');
+        const downgradePath = path.join(process.resourcesPath, 'app', 'downgrade.js', 'main.js');
+        
+        if (fs.existsSync(downgradePath)) {
+            const downgradeContent = fs.readFileSync(downgradePath, 'utf8');
+            fs.writeFileSync(mainJsPath, downgradeContent);
+            
+            new Notification({
+                title: 'Откат обновления',
+                body: 'Приложение было возвращено на предыдущую версию'
+            }).show();
+            
+            app.relaunch();
+            app.exit();
+            return true;
+        } else {
+            new Notification({
+                title: 'Ошибка отката',
+                body: 'Файл для отката не найден'
+            }).show();
+        }
+    } catch (error) {
+        console.error('Error downgrading app:', error);
+        new Notification({
+            title: 'Ошибка',
+            body: 'Не удалось выполнить откат'
+        }).show();
     }
     return false;
 }
@@ -327,6 +371,19 @@ function createTray() {
         },
         { type: 'separator' },
         {
+            label: 'Проверить обновления',
+            click: () => {
+                checkForUpdates();
+            }
+        },
+        {
+            label: 'Откат обновлений',
+            click: () => {
+                downgradeApp();
+            }
+        },
+        { type: 'separator' },
+        {
             label: 'Выйти',
             click: () => {
                 app.isQuitting = true;
@@ -374,6 +431,19 @@ function updateTrayMenu() {
             checked: config.isAlwaysOnTop || false,
             click: () => {
                 toggleAlwaysOnTop();
+            }
+        },
+        { type: 'separator' },
+        {
+            label: 'Проверить обновления',
+            click: () => {
+                checkForUpdates();
+            }
+        },
+        {
+            label: 'Откат обновлений',
+            click: () => {
+                downgradeApp();
             }
         },
         { type: 'separator' },
@@ -437,11 +507,9 @@ app.whenReady().then(async () => {
         setAutoLaunch(true);
     }
     
-    const updateApplied = await checkForUpdates();
-    if (!updateApplied) {
-        createWindow();
-        createTray();
-    }
+    await checkForUpdates(true);
+    createWindow();
+    createTray();
 });
 
 app.on("window-all-closed", (event) => {
