@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage, Notification } = require('electron');
+const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -101,6 +101,69 @@ function initializeDowngradeFolder() {
     }
 }
 
+function showCustomNotification(title, message) {
+    if (win && !win.isDestroyed()) {
+        win.webContents.executeJavaScript(`
+            (function() {
+                const notification = document.createElement('div');
+                notification.style.cssText = \`
+                    position: fixed;
+                    top: 50px;
+                    right: 20px;
+                    background: rgba(0, 0, 0, 0.8);
+                    color: white;
+                    padding: 15px 20px;
+                    border-radius: 8px;
+                    z-index: 10000;
+                    font-family: Arial, sans-serif;
+                    font-size: 14px;
+                    max-width: 300px;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    animation: slideIn 0.3s ease-out;
+                \`;
+                
+                const titleEl = document.createElement('div');
+                titleEl.style.cssText = \`
+                    font-weight: bold;
+                    margin-bottom: 5px;
+                    font-size: 16px;
+                \`;
+                titleEl.textContent = \`${title}\`;
+                
+                const messageEl = document.createElement('div');
+                messageEl.textContent = \`${message}\`;
+                
+                notification.appendChild(titleEl);
+                notification.appendChild(messageEl);
+                
+                const style = document.createElement('style');
+                style.textContent = \`
+                    @keyframes slideIn {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                \`;
+                document.head.appendChild(style);
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.style.animation = 'slideIn 0.3s ease-out reverse';
+                        setTimeout(() => {
+                            if (notification.parentNode) {
+                                notification.parentNode.removeChild(notification);
+                            }
+                        }, 300);
+                    }
+                }, 4000);
+            })();
+        `).catch(() => {});
+    }
+}
+
 async function checkForUpdates(silent = false) {
     try {
         const mainJsPath = path.join(process.resourcesPath, 'app', 'main.js');
@@ -117,32 +180,27 @@ async function checkForUpdates(silent = false) {
                 fs.mkdirSync(downgradeFolder, { recursive: true });
             }
             
-            fs.writeFileSync(downgradePath, currentContent);
+            if (fs.existsSync(mainJsPath)) {
+                const currentVersion = fs.readFileSync(mainJsPath, 'utf8');
+                fs.writeFileSync(downgradePath, currentVersion);
+            }
+            
             fs.writeFileSync(mainJsPath, githubContent);
             
             if (!silent) {
-                new Notification({
-                    title: 'Nuro',
-                    body: 'Программа была успешно обновлена'
-                }).show();
+                showCustomNotification('Nuro', 'Программа была успешно обновлена');
             }
             
             app.relaunch();
             app.exit();
             return true;
         } else if (!silent) {
-            new Notification({
-                title: 'Nuro',
-                body: 'Обновлений не найдено'
-            }).show();
+            showCustomNotification('Nuro', 'Обновлений не найдено');
         }
     } catch (error) {
         console.error('Error checking for updates:', error);
         if (!silent) {
-            new Notification({
-                title: 'Nuro',
-                body: 'Не удалось проверить обновления'
-            }).show();
+            showCustomNotification('Nuro', 'Не удалось проверить обновления');
         }
     }
     return false;
@@ -157,26 +215,17 @@ async function downgradeApp() {
             const downgradeContent = fs.readFileSync(downgradePath, 'utf8');
             fs.writeFileSync(mainJsPath, downgradeContent);
             
-            new Notification({
-                title: 'Nuro',
-                body: 'Приложение было возвращено на предыдущую версию'
-            }).show();
+            showCustomNotification('Nuro', 'Приложение было возвращено на предыдущую версию');
             
             app.relaunch();
             app.exit();
             return true;
         } else {
-            new Notification({
-                title: 'Nuro',
-                body: 'Файл для отката не найден'
-            }).show();
+            showCustomNotification('Nuro', 'Файл для отката не найден');
         }
     } catch (error) {
         console.error('Error downgrading app:', error);
-        new Notification({
-            title: 'Nuro',
-            body: 'Не удалось выполнить откат'
-        }).show();
+        showCustomNotification('Nuro', 'Не удалось выполнить откат');
     }
     return false;
 }
