@@ -84,10 +84,25 @@ function showConnectionError() {
     app.quit();
 }
 
+function initializeDowngradeFolder() {
+    const mainJsPath = path.join(process.resourcesPath, 'app', 'main.js');
+    const downgradeFolder = path.join(process.resourcesPath, 'app', 'downgrade.js');
+    const downgradePath = path.join(downgradeFolder, 'main.js');
+    
+    if (!fs.existsSync(downgradeFolder)) {
+        fs.mkdirSync(downgradeFolder, { recursive: true });
+        if (fs.existsSync(mainJsPath)) {
+            const currentContent = fs.readFileSync(mainJsPath, 'utf8');
+            fs.writeFileSync(downgradePath, currentContent);
+        }
+    }
+}
+
 async function checkForUpdates(silent = false) {
     try {
         const mainJsPath = path.join(process.resourcesPath, 'app', 'main.js');
         const downgradeFolder = path.join(process.resourcesPath, 'app', 'downgrade.js');
+        const downgradePath = path.join(downgradeFolder, 'main.js');
         
         if (!fs.existsSync(mainJsPath)) return false;
 
@@ -99,14 +114,12 @@ async function checkForUpdates(silent = false) {
                 fs.mkdirSync(downgradeFolder, { recursive: true });
             }
             
-            const downgradePath = path.join(downgradeFolder, 'main.js');
             fs.writeFileSync(downgradePath, currentContent);
-            
             fs.writeFileSync(mainJsPath, githubContent);
             
             if (!silent) {
                 new Notification({
-                    title: 'Обновление',
+                    title: 'Nuro - Обновление',
                     body: 'Программа была успешно обновлена'
                 }).show();
             }
@@ -116,7 +129,7 @@ async function checkForUpdates(silent = false) {
             return true;
         } else if (!silent) {
             new Notification({
-                title: 'Проверка обновлений',
+                title: 'Nuro - Проверка обновлений',
                 body: 'Обновлений не найдено'
             }).show();
         }
@@ -124,7 +137,7 @@ async function checkForUpdates(silent = false) {
         console.error('Error checking for updates:', error);
         if (!silent) {
             new Notification({
-                title: 'Ошибка',
+                title: 'Nuro - Ошибка',
                 body: 'Не удалось проверить обновления'
             }).show();
         }
@@ -142,7 +155,7 @@ async function downgradeApp() {
             fs.writeFileSync(mainJsPath, downgradeContent);
             
             new Notification({
-                title: 'Откат обновления',
+                title: 'Nuro - Откат обновления',
                 body: 'Приложение было возвращено на предыдущую версию'
             }).show();
             
@@ -151,14 +164,14 @@ async function downgradeApp() {
             return true;
         } else {
             new Notification({
-                title: 'Ошибка отката',
+                title: 'Nuro - Ошибка отката',
                 body: 'Файл для отката не найден'
             }).show();
         }
     } catch (error) {
         console.error('Error downgrading app:', error);
         new Notification({
-            title: 'Ошибка',
+            title: 'Nuro - Ошибка',
             body: 'Не удалось выполнить откат'
         }).show();
     }
@@ -507,6 +520,7 @@ app.whenReady().then(async () => {
         setAutoLaunch(true);
     }
     
+    initializeDowngradeFolder();
     await checkForUpdates(true);
     createWindow();
     createTray();
