@@ -86,21 +86,6 @@ function showConnectionError() {
     app.quit();
 }
 
-function initializeDowngradeFolder() {
-    const mainJsPath = path.join(process.resourcesPath, 'app', 'main.js');
-    const downgradeFolder = path.join(process.resourcesPath, 'app', 'downgrade.js');
-    const downgradePath = path.join(downgradeFolder, 'main.js');
-    
-    if (!fs.existsSync(downgradeFolder)) {
-        fs.mkdirSync(downgradeFolder, { recursive: true });
-    }
-    
-    if (fs.existsSync(mainJsPath) && !fs.existsSync(downgradePath)) {
-        const currentContent = fs.readFileSync(mainJsPath, 'utf8');
-        fs.writeFileSync(downgradePath, currentContent);
-    }
-}
-
 function showCustomNotification(title, message) {
     if (win && !win.isDestroyed()) {
         win.webContents.executeJavaScript(`
@@ -110,18 +95,19 @@ function showCustomNotification(title, message) {
                     position: fixed;
                     top: 50px;
                     right: 20px;
-                    background: rgba(0, 0, 0, 0.8);
+                    background: rgba(255, 255, 255, 0.1);
                     color: white;
                     padding: 15px 20px;
-                    border-radius: 8px;
+                    border-radius: 12px;
                     z-index: 10000;
                     font-family: Arial, sans-serif;
                     font-size: 14px;
                     max-width: 300px;
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-                    backdrop-filter: blur(10px);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    backdrop-filter: blur(20px) saturate(180%);
+                    -webkit-backdrop-filter: blur(20px) saturate(180%);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
                     animation: slideIn 0.3s ease-out;
+                    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
                 \`;
                 
                 const titleEl = document.createElement('div');
@@ -129,10 +115,14 @@ function showCustomNotification(title, message) {
                     font-weight: bold;
                     margin-bottom: 5px;
                     font-size: 16px;
+                    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
                 \`;
                 titleEl.textContent = \`${title}\`;
                 
                 const messageEl = document.createElement('div');
+                messageEl.style.cssText = \`
+                    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+                \`;
                 messageEl.textContent = \`${message}\`;
                 
                 notification.appendChild(titleEl);
@@ -167,8 +157,6 @@ function showCustomNotification(title, message) {
 async function checkForUpdates(silent = false) {
     try {
         const mainJsPath = path.join(process.resourcesPath, 'app', 'main.js');
-        const downgradeFolder = path.join(process.resourcesPath, 'app', 'downgrade.js');
-        const downgradePath = path.join(downgradeFolder, 'main.js');
         
         if (!fs.existsSync(mainJsPath)) return false;
 
@@ -176,15 +164,6 @@ async function checkForUpdates(silent = false) {
         const githubContent = await fetchURL('https://raw.githubusercontent.com/ECCSco/Nuro_Configuration/refs/heads/main/AU.json');
 
         if (githubContent && currentContent !== githubContent) {
-            if (!fs.existsSync(downgradeFolder)) {
-                fs.mkdirSync(downgradeFolder, { recursive: true });
-            }
-            
-            if (fs.existsSync(mainJsPath)) {
-                const currentVersion = fs.readFileSync(mainJsPath, 'utf8');
-                fs.writeFileSync(downgradePath, currentVersion);
-            }
-            
             fs.writeFileSync(mainJsPath, githubContent);
             
             if (!silent) {
@@ -202,30 +181,6 @@ async function checkForUpdates(silent = false) {
         if (!silent) {
             showCustomNotification('Nuro', 'Не удалось проверить обновления');
         }
-    }
-    return false;
-}
-
-async function downgradeApp() {
-    try {
-        const mainJsPath = path.join(process.resourcesPath, 'app', 'main.js');
-        const downgradePath = path.join(process.resourcesPath, 'app', 'downgrade.js', 'main.js');
-        
-        if (fs.existsSync(downgradePath)) {
-            const downgradeContent = fs.readFileSync(downgradePath, 'utf8');
-            fs.writeFileSync(mainJsPath, downgradeContent);
-            
-            showCustomNotification('Nuro', 'Приложение было возвращено на предыдущую версию');
-            
-            app.relaunch();
-            app.exit();
-            return true;
-        } else {
-            showCustomNotification('Nuro', 'Файл для отката не найден');
-        }
-    } catch (error) {
-        console.error('Error downgrading app:', error);
-        showCustomNotification('Nuro', 'Не удалось выполнить откат');
     }
     return false;
 }
@@ -441,12 +396,6 @@ function createTray() {
                 checkForUpdates();
             }
         },
-        {
-            label: 'Откат обновлений',
-            click: () => {
-                downgradeApp();
-            }
-        },
         { type: 'separator' },
         {
             label: 'Выйти',
@@ -503,12 +452,6 @@ function updateTrayMenu() {
             label: 'Проверить обновления',
             click: () => {
                 checkForUpdates();
-            }
-        },
-        {
-            label: 'Откат обновлений',
-            click: () => {
-                downgradeApp();
             }
         },
         { type: 'separator' },
@@ -572,7 +515,6 @@ app.whenReady().then(async () => {
         setAutoLaunch(true);
     }
     
-    initializeDowngradeFolder();
     await checkForUpdates(true);
     createWindow();
     createTray();
