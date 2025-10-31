@@ -244,9 +244,13 @@ function toggleSide() {
 }
 
 function setupGlobalShortcuts() {
-    globalShortcut.register('Ctrl+Alt+N', () => {
+    const ret = globalShortcut.register('Control+Alt', () => {
         toggleWindow();
     });
+    
+    if (!ret) {
+        console.log('Global shortcut registration failed');
+    }
 }
 
 async function createWindow() {
@@ -320,6 +324,19 @@ async function createWindow() {
         if (!app.isQuitting) {
             event.preventDefault();
             win.hide();
+        }
+    });
+
+    win.on('blur', () => {
+        if (config.alwaysOnTop === false && win.isVisible()) {
+            setTimeout(() => {
+                if (win && !win.isDestroyed() && !win.isFocused()) {
+                    const focusedWindow = BrowserWindow.getFocusedWindow();
+                    if (focusedWindow && focusedWindow.id !== win.id) {
+                        win.hide();
+                    }
+                }
+            }, 100);
         }
     });
 
@@ -436,6 +453,15 @@ app.whenReady().then(async () => {
     await checkForUpdates(true);
     createWindow();
     createTray();
+    
+    app.on('activate', () => {
+        if (BrowserWindow.getAllWindows().length === 0) {
+            createWindow();
+        }
+    });
+});
+
+app.on('ready', () => {
     setupGlobalShortcuts();
 });
 
