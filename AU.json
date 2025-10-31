@@ -478,7 +478,7 @@ function updateTrayMenu() {
             }
         },
         {
-            label: 'Показать приложение',
+            label: 'Показать окно',
             submenu: [
                 {
                     label: 'Справа',
