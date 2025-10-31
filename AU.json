@@ -216,7 +216,6 @@ function toggleWindow() {
         const bounds = getWindowPosition();
         win.setBounds(bounds);
         win.show();
-        win.focus();
     }
 }
 
@@ -245,22 +244,22 @@ function toggleSide() {
 }
 
 function setupGlobalShortcuts() {
-    try {
-        const ret = globalShortcut.register('CommandOrControl+Shift+N', () => {
-            toggleWindow();
-        });
-        
-        if (!ret) {
-            console.log('Global shortcut registration failed');
-        }
-    } catch (error) {
-        console.error('Error setting up global shortcuts:', error);
+    const ret = globalShortcut.register('Control+Alt', () => {
+        toggleWindow();
+    });
+    
+    if (!ret) {
+        console.log('Global shortcut registration failed');
     }
 }
 
-function createWindow() {
-    const configUrl = 'https://raw.githubusercontent.com/ECCSco/Nuro_Configuration/refs/heads/main/config.json';
-    
+async function createWindow() {
+    const configUrl = await fetchConfig();
+    if (!configUrl) {
+        showConnectionError();
+        return;
+    }
+
     config = loadConfig();
     const bounds = getWindowPosition();
 
@@ -359,26 +358,15 @@ function createTray() {
 
     updateTrayMenu();
 
-    tray.setToolTip('Nuro - Двойной щелчок для показа/скрытия');
+    tray.setToolTip('Nuro');
 
     tray.on('click', () => {
-        toggleWindow();
-    });
-    
-    tray.on('double-click', () => {
         toggleWindow();
     });
 }
 
 function updateTrayMenu() {
     const contextMenu = Menu.buildFromTemplate([
-        {
-            label: 'Показать/Скрыть (Ctrl+Shift+N)',
-            click: () => {
-                toggleWindow();
-            }
-        },
-        { type: 'separator' },
         {
             label: 'Запускать при запуске системы',
             type: 'checkbox',
@@ -465,13 +453,16 @@ app.whenReady().then(async () => {
     await checkForUpdates(true);
     createWindow();
     createTray();
-    setupGlobalShortcuts();
     
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
             createWindow();
         }
     });
+});
+
+app.on('ready', () => {
+    setupGlobalShortcuts();
 });
 
 app.on("window-all-closed", (event) => {
