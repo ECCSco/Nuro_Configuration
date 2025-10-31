@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -6,7 +6,6 @@ let win;
 let tray;
 let config = {};
 let isAnimating = false;
-let mouseWatchInterval;
 
 app.name = 'Nuro';
 
@@ -287,40 +286,14 @@ async function slideWindow(show) {
     isAnimating = false;
 }
 
-function startMouseWatch() {
-    if (mouseWatchInterval) clearInterval(mouseWatchInterval);
+function toggleWindow() {
+    if (!win || win.isDestroyed()) return;
     
-    mouseWatchInterval = setInterval(() => {
-        if (config.pinned || !win || isAnimating) return;
-        
-        const cursor = screen.getCursorScreenPoint();
-        const display = screen.getDisplayNearestPoint(cursor);
-        const { workArea } = display;
-        const side = config.side || 'right';
-        
-        const activationZone = 10;
-        let inActivationZone = false;
-        
-        if (side === 'right') {
-            inActivationZone = cursor.x >= workArea.x + workArea.width - activationZone && 
-                              cursor.x <= workArea.x + workArea.width;
-        } else {
-            inActivationZone = cursor.x >= workArea.x && 
-                              cursor.x <= workArea.x + activationZone;
-        }
-        
-        const winBounds = win.getBounds();
-        const cursorInWindow = cursor.x >= winBounds.x && 
-                              cursor.x <= winBounds.x + winBounds.width &&
-                              cursor.y >= winBounds.y && 
-                              cursor.y <= winBounds.y + winBounds.height;
-        
-        if (inActivationZone && !win.isVisible() && !cursorInWindow) {
-            slideWindow(true);
-        } else if (!inActivationZone && !cursorInWindow && win.isVisible() && !config.pinned) {
-            slideWindow(false);
-        }
-    }, 50);
+    if (win.isVisible()) {
+        slideWindow(false);
+    } else {
+        slideWindow(true);
+    }
 }
 
 function updateWindowForPinnedState() {
@@ -331,14 +304,7 @@ function updateWindowForPinnedState() {
         slideWindow(true);
     } else {
         win.setAlwaysOnTop(false);
-        const cursor = screen.getCursorScreenPoint();
-        const winBounds = win.getBounds();
-        const cursorInWindow = cursor.x >= winBounds.x && 
-                              cursor.x <= winBounds.x + winBounds.width &&
-                              cursor.y >= winBounds.y && 
-                              cursor.y <= winBounds.y + winBounds.height;
-        
-        if (!cursorInWindow) {
+        if (win.isVisible()) {
             slideWindow(false);
         }
     }
@@ -364,6 +330,12 @@ function toggleSide() {
             }
         }, 100);
     }
+}
+
+function setupGlobalShortcuts() {
+    globalShortcut.register('Backspace', () => {
+        toggleWindow();
+    });
 }
 
 async function createWindow() {
@@ -402,13 +374,6 @@ async function createWindow() {
         movable: false,
         skipTaskbar: true
     });
-
-    const side = config.side || 'right';
-    if (side === 'right') {
-        win.setResizable(true);
-    } else {
-        win.setResizable(true);
-    }
 
     win.loadURL(configUrl);
 
@@ -453,16 +418,11 @@ async function createWindow() {
 
     win.on('blur', () => {
         if (!config.pinned && win.isVisible()) {
-            const cursor = screen.getCursorScreenPoint();
-            const winBounds = win.getBounds();
-            const cursorInWindow = cursor.x >= winBounds.x && 
-                                  cursor.x <= winBounds.x + winBounds.width &&
-                                  cursor.y >= winBounds.y && 
-                                  cursor.y <= winBounds.y + winBounds.height;
-            
-            if (!cursorInWindow) {
-                slideWindow(false);
-            }
+            setTimeout(() => {
+                if (win && !win.isDestroyed() && !win.isFocused()) {
+                    slideWindow(false);
+                }
+            }, 100);
         }
     });
 
@@ -479,7 +439,7 @@ async function createWindow() {
         }
     });
 
-    startMouseWatch();
+    setupGlobalShortcuts();
 }
 
 function createTray() {
@@ -552,11 +512,7 @@ function createTray() {
     tray.setContextMenu(contextMenu);
 
     tray.on('click', () => {
-        if (win && !win.isDestroyed() && win.isVisible()) {
-            slideWindow(false);
-        } else {
-            slideWindow(true);
-        }
+        toggleWindow();
     });
 }
 
@@ -656,7 +612,9 @@ app.on("window-all-closed", (event) => {
 
 app.on('before-quit', () => {
     app.isQuitting = true;
-    if (mouseWatchInterval) {
-        clearInterval(mouseWatchInterval);
-    }
+    globalShortcut.unregisterAll();
+});
+
+app.on('will-quit', () => {
+    globalShortcut.unregisterAll();
 });
