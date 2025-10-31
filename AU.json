@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -19,7 +19,7 @@ function loadConfig() {
     } catch (error) {
         console.error('Error loading config:', error);
     }
-    return {};
+    return { width: 400, side: 'right', pinned: false };
 }
 
 function saveConfig(newConfig) {
@@ -200,6 +200,76 @@ function setAutoLaunch(value) {
     saveConfig({ runAtStartup: value });
 }
 
+function updateWindowPosition() {
+    if (!win || win.isDestroyed()) return;
+
+    const display = screen.getPrimaryDisplay();
+    const { workArea } = display;
+    
+    const width = config.width || 400;
+    const side = config.side || 'right';
+    
+    let x;
+    if (side === 'right') {
+        x = workArea.x + workArea.width - width;
+    } else {
+        x = workArea.x;
+    }
+
+    win.setBounds({
+        x: x,
+        y: workArea.y,
+        width: width,
+        height: workArea.height
+    });
+
+    if (config.pinned) {
+        win.setAlwaysOnTop(true);
+        win.showInactive();
+    } else {
+        win.setAlwaysOnTop(false);
+        win.hide();
+    }
+}
+
+function togglePinned() {
+    config.pinned = !config.pinned;
+    saveConfig({ pinned: config.pinned });
+    updateWindowPosition();
+    updateTrayMenu();
+}
+
+function toggleSide() {
+    config.side = config.side === 'right' ? 'left' : 'right';
+    saveConfig({ side: config.side });
+    updateWindowPosition();
+    updateTrayMenu();
+}
+
+function changeWidth() {
+    dialog.showMessageBox(win, {
+        type: 'question',
+        title: 'Изменение ширины',
+        message: 'Введите новую ширину панели (от 300 до 800):',
+        buttons: ['OK', 'Cancel'],
+        defaultId: 0,
+        cancelId: 1,
+        input: 'text',
+        text: (config.width || 400).toString()
+    }).then(result => {
+        if (result.response === 0) {
+            const newWidth = parseInt(result.input);
+            if (newWidth >= 300 && newWidth <= 800) {
+                config.width = newWidth;
+                saveConfig({ width: newWidth });
+                updateWindowPosition();
+            } else {
+                dialog.showErrorBox('Ошибка', 'Ширина должна быть от 300 до 800 пикселей.');
+            }
+        }
+    });
+}
+
 async function createWindow() {
     const configUrl = await fetchConfig();
     if (!configUrl) {
@@ -208,23 +278,24 @@ async function createWindow() {
     }
 
     config = loadConfig();
-    const savedBounds = config.windowBounds || {};
-
-    const cursorPoint = screen.getCursorScreenPoint();
-    const display = screen.getDisplayNearestPoint(cursorPoint);
+    const display = screen.getPrimaryDisplay();
     const { workArea } = display;
     
-    const width = savedBounds.width || 800;
-    const height = savedBounds.height || 600;
+    const width = config.width || 400;
+    const side = config.side || 'right';
     
-    const winX = savedBounds.x || workArea.x + Math.max(0, (workArea.width - width) / 2);
-    const winY = savedBounds.y || workArea.y + Math.max(0, (workArea.height - height) / 2);
+    let x;
+    if (side === 'right') {
+        x = workArea.x + workArea.width - width;
+    } else {
+        x = workArea.x;
+    }
 
     win = new BrowserWindow({
         width: width,
-        height: height,
-        x: winX,
-        y: winY,
+        height: workArea.height,
+        x: x,
+        y: workArea.y,
         autoHideMenuBar: true,
         icon: path.join(__dirname, 'NuroIcon.ico'),
         webPreferences: {
@@ -235,20 +306,17 @@ async function createWindow() {
         },
         show: false,
         opacity: 0,
-        minWidth: 500,
-        minHeight: 400,
+        minWidth: 300,
+        maxWidth: 800,
+        minHeight: workArea.height,
+        maxHeight: workArea.height,
         titleBarStyle: 'hidden',
         frame: false,
-        backgroundColor: '#000000'
+        backgroundColor: '#000000',
+        alwaysOnTop: config.pinned || false,
+        resizable: true,
+        movable: false
     });
-
-    if (config.isFullScreen) {
-        win.setFullScreen(true);
-    }
-    
-    if (config.isAlwaysOnTop) {
-        win.setAlwaysOnTop(true);
-    }
 
     win.loadURL(configUrl);
 
@@ -259,9 +327,11 @@ async function createWindow() {
                 overscroll-behavior: none !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                height: 100vh !important;
             }
             
-            .drag-handle {
+            body::before {
+                content: '';
                 position: fixed;
                 top: 0;
                 left: 0;
@@ -271,50 +341,8 @@ async function createWindow() {
                 -webkit-app-region: drag;
                 z-index: 10000;
             }
-            
-            body {
-                margin-top: 30px !important;
-                height: calc(100vh - 30px) !important;
-                overflow: auto !important;
-            }
-            
-            #app, .app, .container, .root, [data-reactroot], [id*='root'], [class*='root'] {
-                margin-top: 0 !important;
-            }
         `);
 
-        win.webContents.executeJavaScript(`
-            if (!document.querySelector('.drag-handle')) {
-                const dragHandle = document.createElement('div');
-                dragHandle.className = 'drag-handle';
-                document.body.appendChild(dragHandle);
-                
-                const originalHeight = document.body.style.height;
-                const originalMargin = document.body.style.marginTop;
-                
-                document.body.style.marginTop = '30px';
-                document.body.style.height = 'calc(100vh - 30px)';
-                
-                const appContainers = [
-                    document.getElementById('app'),
-                    document.getElementById('root'),
-                    document.querySelector('.app'),
-                    document.querySelector('.container'),
-                    document.querySelector('[data-reactroot]'),
-                    document.querySelector('[id*="root"]'),
-                    document.querySelector('[class*="root"]'),
-                    document.querySelector('body > div:first-child')
-                ];
-                
-                for (const container of appContainers) {
-                    if (container && container.style) {
-                        container.style.marginTop = '0';
-                        container.style.height = '100%';
-                    }
-                }
-            }
-        `).catch(() => {});
-        
         win.show();
         let opacity = 0;
         const fadeInInterval = setInterval(() => {
@@ -323,7 +351,6 @@ async function createWindow() {
             
             if (opacity >= 1) {
                 clearInterval(fadeInInterval);
-                win.focus();
             }
         }, 30);
     });
@@ -339,36 +366,18 @@ async function createWindow() {
         }
     });
 
+    win.on('blur', () => {
+        if (!config.pinned && win.isVisible()) {
+            win.hide();
+        }
+    });
+
     win.on('resize', () => {
-        if (win && !win.isDestroyed() && !win.isMaximized() && !win.isMinimized() && !win.isFullScreen()) {
-            const bounds = win.getBounds();
-            saveConfig({ windowBounds: bounds });
+        const bounds = win.getBounds();
+        if (bounds.width !== config.width) {
+            config.width = bounds.width;
+            saveConfig({ width: bounds.width });
         }
-    });
-
-    win.on('move', () => {
-        if (win && !win.isDestroyed() && !win.isMaximized() && !win.isMinimized() && !win.isFullScreen()) {
-            const bounds = win.getBounds();
-            saveConfig({ windowBounds: bounds });
-        }
-    });
-
-    win.on('enter-full-screen', () => {
-        saveConfig({ isFullScreen: true });
-        win.webContents.executeJavaScript(`
-            document.querySelector('.drag-handle').style.display = 'none';
-            document.body.style.marginTop = '0';
-            document.body.style.height = '100vh';
-        `).catch(() => {});
-    });
-
-    win.on('leave-full-screen', () => {
-        saveConfig({ isFullScreen: false });
-        win.webContents.executeJavaScript(`
-            document.querySelector('.drag-handle').style.display = 'block';
-            document.body.style.marginTop = '30px';
-            document.body.style.height = 'calc(100vh - 30px)';
-        `).catch(() => {});
     });
 }
 
@@ -389,11 +398,42 @@ function createTray() {
             }
         },
         {
-            label: 'Поверх окон',
+            label: 'Закрывать автоматически',
             type: 'checkbox',
-            checked: config.isAlwaysOnTop || false,
+            checked: !config.pinned,
             click: () => {
-                toggleAlwaysOnTop();
+                togglePinned();
+            }
+        },
+        {
+            label: 'Показать приложение',
+            submenu: [
+                {
+                    label: 'Справа',
+                    type: 'radio',
+                    checked: config.side === 'right',
+                    click: () => {
+                        if (config.side !== 'right') {
+                            toggleSide();
+                        }
+                    }
+                },
+                {
+                    label: 'Слева',
+                    type: 'radio',
+                    checked: config.side === 'left',
+                    click: () => {
+                        if (config.side !== 'left') {
+                            toggleSide();
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            label: 'Изменить ширину',
+            click: () => {
+                changeWidth();
             }
         },
         { type: 'separator' },
@@ -425,17 +465,6 @@ function createTray() {
     });
 }
 
-function toggleAlwaysOnTop() {
-    const newValue = !config.isAlwaysOnTop;
-    saveConfig({ isAlwaysOnTop: newValue });
-    
-    if (win && !win.isDestroyed()) {
-        win.setAlwaysOnTop(newValue);
-    }
-    
-    updateTrayMenu();
-}
-
 function updateTrayMenu() {
     const contextMenu = Menu.buildFromTemplate([
         {
@@ -447,11 +476,42 @@ function updateTrayMenu() {
             }
         },
         {
-            label: 'Поверх окон',
+            label: 'Закрывать автоматически',
             type: 'checkbox',
-            checked: config.isAlwaysOnTop || false,
+            checked: !config.pinned,
             click: () => {
-                toggleAlwaysOnTop();
+                togglePinned();
+            }
+        },
+        {
+            label: 'Показать приложение',
+            submenu: [
+                {
+                    label: 'Справа',
+                    type: 'radio',
+                    checked: config.side === 'right',
+                    click: () => {
+                        if (config.side !== 'right') {
+                            toggleSide();
+                        }
+                    }
+                },
+                {
+                    label: 'Слева',
+                    type: 'radio',
+                    checked: config.side === 'left',
+                    click: () => {
+                        if (config.side !== 'left') {
+                            toggleSide();
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            label: 'Изменить ширину',
+            click: () => {
+                changeWidth();
             }
         },
         { type: 'separator' },
@@ -481,24 +541,7 @@ function showWindow() {
             return;
         }
         
-        const cursorPoint = screen.getCursorScreenPoint();
-        const display = screen.getDisplayNearestPoint(cursorPoint);
-        const { workArea } = display;
-        
-        const winBounds = win.getBounds();
-        const maxWidth = Math.min(winBounds.width, workArea.width - 40);
-        const maxHeight = Math.min(winBounds.height, workArea.height - 40);
-        
-        const winX = workArea.x + Math.max(0, (workArea.width - maxWidth) / 2);
-        const winY = workArea.y + Math.max(0, (workArea.height - maxHeight) / 2);
-        
-        win.setBounds({
-            x: winX,
-            y: winY,
-            width: maxWidth,
-            height: maxHeight
-        });
-        
+        updateWindowPosition();
         win.show();
         win.focus();
     } else {
@@ -533,9 +576,4 @@ app.on("window-all-closed", (event) => {
 
 app.on('before-quit', () => {
     app.isQuitting = true;
-    
-    if (win && !win.isDestroyed()) {
-        const bounds = win.getBounds();
-        saveConfig({ windowBounds: bounds });
-    }
 });
