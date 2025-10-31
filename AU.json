@@ -5,7 +5,6 @@ const fs = require('fs');
 let win;
 let tray;
 let config = {};
-let isAnimating = false;
 
 app.name = 'Nuro';
 
@@ -20,7 +19,7 @@ function loadConfig() {
     } catch (error) {
         console.error('Error loading config:', error);
     }
-    return { width: 400, side: 'right', pinned: false };
+    return { width: 400, side: 'right', alwaysOnTop: true };
 }
 
 function saveConfig(newConfig) {
@@ -207,28 +206,8 @@ function getWindowPosition() {
     
     const width = config.width || 400;
     const side = config.side || 'right';
-    
-    let x;
-    if (side === 'right') {
-        x = workArea.x + workArea.width;
-    } else {
-        x = workArea.x - width;
-    }
-
-    return {
-        x: x,
-        y: workArea.y,
-        width: width,
-        height: workArea.height
-    };
-}
-
-function getVisibleWindowPosition() {
-    const display = screen.getPrimaryDisplay();
-    const { workArea } = display;
-    
-    const width = config.width || 400;
-    const side = config.side || 'right';
+    const height = Math.floor(workArea.height / 2);
+    const y = workArea.y + Math.floor((workArea.height - height) / 2);
     
     let x;
     if (side === 'right') {
@@ -239,105 +218,47 @@ function getVisibleWindowPosition() {
 
     return {
         x: x,
-        y: workArea.y,
+        y: y,
         width: width,
-        height: workArea.height
+        height: height
     };
-}
-
-function easeInOutCubic(t) {
-    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
-async function slideWindow(show) {
-    if (isAnimating || !win) return;
-    
-    isAnimating = true;
-    const targetBounds = show ? getVisibleWindowPosition() : getWindowPosition();
-    const steps = 20;
-    const duration = 300;
-    const stepTime = duration / steps;
-
-    const startBounds = win.getBounds();
-    const deltaX = targetBounds.x - startBounds.x;
-    const deltaWidth = targetBounds.width - startBounds.width;
-
-    for (let i = 0; i <= steps; i++) {
-        await new Promise(resolve => setTimeout(resolve, stepTime));
-        if (!win || win.isDestroyed()) break;
-        
-        const progress = easeInOutCubic(i / steps);
-        const currentX = startBounds.x + (deltaX * progress);
-        const currentWidth = startBounds.width + (deltaWidth * progress);
-        
-        win.setBounds({
-            x: Math.round(currentX),
-            y: targetBounds.y,
-            width: Math.round(currentWidth),
-            height: targetBounds.height
-        });
-    }
-
-    if (win && !win.isDestroyed()) {
-        win.setBounds(targetBounds);
-        if (show) {
-            win.showInactive();
-        } else if (!config.pinned) {
-            win.hide();
-        }
-    }
-    
-    isAnimating = false;
 }
 
 function toggleWindow() {
     if (!win || win.isDestroyed()) return;
     
     if (win.isVisible()) {
-        slideWindow(false);
+        win.hide();
     } else {
-        slideWindow(true);
+        const bounds = getWindowPosition();
+        win.setBounds(bounds);
+        win.show();
     }
 }
 
-function updateWindowForPinnedState() {
-    if (!win || win.isDestroyed()) return;
+function toggleAlwaysOnTop() {
+    config.alwaysOnTop = !config.alwaysOnTop;
+    saveConfig({ alwaysOnTop: config.alwaysOnTop });
     
-    win.setAlwaysOnTop(true);
-    
-    if (config.pinned) {
-        slideWindow(true);
-    } else {
-        if (win.isVisible()) {
-            slideWindow(false);
-        }
+    if (win && !win.isDestroyed()) {
+        win.setAlwaysOnTop(config.alwaysOnTop);
     }
-}
-
-function togglePinned() {
-    config.pinned = !config.pinned;
-    saveConfig({ pinned: config.pinned });
-    updateWindowForPinnedState();
+    
     updateTrayMenu();
 }
 
 function toggleSide() {
     config.side = config.side === 'right' ? 'left' : 'right';
     saveConfig({ side: config.side });
-    if (win && !win.isDestroyed()) {
-        win.hide();
-        setTimeout(() => {
-            const newBounds = getWindowPosition();
-            win.setBounds(newBounds);
-            if (config.pinned) {
-                slideWindow(true);
-            }
-        }, 100);
+    
+    if (win && !win.isDestroyed() && win.isVisible()) {
+        const bounds = getWindowPosition();
+        win.setBounds(bounds);
     }
 }
 
 function setupGlobalShortcuts() {
-    globalShortcut.register('F12', () => {
+    globalShortcut.register('Control+Alt', () => {
         toggleWindow();
     });
 }
@@ -350,13 +271,13 @@ async function createWindow() {
     }
 
     config = loadConfig();
-    const initialBounds = getWindowPosition();
+    const bounds = getWindowPosition();
 
     win = new BrowserWindow({
-        width: initialBounds.width,
-        height: initialBounds.height,
-        x: initialBounds.x,
-        y: initialBounds.y,
+        width: bounds.width,
+        height: bounds.height,
+        x: bounds.x,
+        y: bounds.y,
         autoHideMenuBar: true,
         icon: path.join(__dirname, 'NuroIcon.ico'),
         webPreferences: {
@@ -368,12 +289,12 @@ async function createWindow() {
         show: false,
         minWidth: 300,
         maxWidth: 800,
-        minHeight: initialBounds.height,
-        maxHeight: initialBounds.height,
+        minHeight: bounds.height,
+        maxHeight: bounds.height,
         titleBarStyle: 'hidden',
         frame: false,
         backgroundColor: '#000000',
-        alwaysOnTop: true,
+        alwaysOnTop: config.alwaysOnTop || true,
         resizable: true,
         movable: false,
         skipTaskbar: true
@@ -403,10 +324,6 @@ async function createWindow() {
                 z-index: 10000;
             }
         `);
-
-        if (config.pinned) {
-            slideWindow(true);
-        }
     });
 
     win.webContents.on('did-fail-load', () => {
@@ -420,29 +337,14 @@ async function createWindow() {
         }
     });
 
-    win.on('blur', () => {
-        if (!config.pinned && win.isVisible()) {
-            setTimeout(() => {
-                if (win && !win.isDestroyed() && !win.isFocused()) {
-                    slideWindow(false);
-                }
-            }, 100);
-        }
-    });
-
     win.on('resize', () => {
         const bounds = win.getBounds();
         if (bounds.width !== config.width) {
             config.width = bounds.width;
             saveConfig({ width: bounds.width });
-            
-            if (win.isVisible()) {
-                const visiblePos = getVisibleWindowPosition();
-                win.setBounds(visiblePos);
-            }
         }
     });
-
+    
     setupGlobalShortcuts();
 }
 
@@ -463,11 +365,11 @@ function createTray() {
             }
         },
         {
-            label: 'Закрывать автоматически',
+            label: 'Поверх окон',
             type: 'checkbox',
-            checked: !config.pinned,
+            checked: config.alwaysOnTop || true,
             click: () => {
-                togglePinned();
+                toggleAlwaysOnTop();
             }
         },
         {
@@ -531,11 +433,11 @@ function updateTrayMenu() {
             }
         },
         {
-            label: 'Закрывать автоматически',
+            label: 'Поверх окон',
             type: 'checkbox',
-            checked: !config.pinned,
+            checked: config.alwaysOnTop || true,
             click: () => {
-                togglePinned();
+                toggleAlwaysOnTop();
             }
         },
         {
@@ -593,7 +495,7 @@ if (!gotTheLock) {
             if (win.isDestroyed()) {
                 createWindow();
             } else {
-                slideWindow(true);
+                toggleWindow();
             }
         }
     });
