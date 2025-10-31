@@ -91,31 +91,28 @@ function showCustomNotification(title, message) {
         return;
     }
 
-    if (!win.isVisible() || win.isMinimized()) {
-        win.show();
-        win.focus();
-    }
-
     win.webContents.executeJavaScript(`
         (function() {
             const notification = document.createElement('div');
             notification.style.cssText = \`
                 position: fixed;
-                top: 50px;
-                right: 20px;
-                background: rgba(255, 255, 255, 0.1);
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0, 0, 0, 0.8);
                 color: white;
-                padding: 15px 20px;
-                border-radius: 12px;
+                padding: 15px 25px;
+                border-radius: 8px;
                 z-index: 10000;
                 font-family: Arial, sans-serif;
                 font-size: 14px;
-                max-width: 300px;
-                backdrop-filter: blur(20px) saturate(180%);
-                -webkit-backdrop-filter: blur(20px) saturate(180%);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                animation: slideIn 0.3s ease-out;
-                box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+                max-width: 400px;
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                opacity: 1;
+                transition: opacity 0.5s ease-in-out;
             \`;
             
             const titleEl = document.createElement('div');
@@ -123,40 +120,25 @@ function showCustomNotification(title, message) {
                 font-weight: bold;
                 margin-bottom: 5px;
                 font-size: 16px;
-                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
             \`;
             titleEl.textContent = \`${title}\`;
             
             const messageEl = document.createElement('div');
-            messageEl.style.cssText = \`
-                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-            \`;
             messageEl.textContent = \`${message}\`;
             
             notification.appendChild(titleEl);
             notification.appendChild(messageEl);
             
-            const style = document.createElement('style');
-            style.textContent = \`
-                @keyframes slideIn {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-            \`;
-            document.head.appendChild(style);
-            
             document.body.appendChild(notification);
             
             setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.style.animation = 'slideIn 0.3s ease-out reverse';
-                    setTimeout(() => {
-                        if (notification.parentNode) {
-                            notification.parentNode.removeChild(notification);
-                        }
-                    }, 300);
-                }
-            }, 4000);
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 500);
+            }, 3000);
         })();
     `).catch(() => {});
 }
@@ -207,7 +189,6 @@ function getWindowPosition() {
     const width = config.width || 400;
     const side = config.side || 'right';
     const height = Math.floor(workArea.height / 2);
-    const y = workArea.y + Math.floor((workArea.height - height) / 2);
     
     let x;
     if (side === 'right') {
@@ -215,6 +196,8 @@ function getWindowPosition() {
     } else {
         x = workArea.x;
     }
+
+    const y = workArea.y + workArea.height - height;
 
     return {
         x: x,
@@ -237,11 +220,12 @@ function toggleWindow() {
 }
 
 function toggleAlwaysOnTop() {
-    config.alwaysOnTop = !config.alwaysOnTop;
-    saveConfig({ alwaysOnTop: config.alwaysOnTop });
+    const newValue = !config.alwaysOnTop;
+    config.alwaysOnTop = newValue;
+    saveConfig({ alwaysOnTop: newValue });
     
     if (win && !win.isDestroyed()) {
-        win.setAlwaysOnTop(config.alwaysOnTop);
+        win.setAlwaysOnTop(newValue);
     }
     
     updateTrayMenu();
@@ -255,10 +239,12 @@ function toggleSide() {
         const bounds = getWindowPosition();
         win.setBounds(bounds);
     }
+    
+    updateTrayMenu();
 }
 
 function setupGlobalShortcuts() {
-    globalShortcut.register('Control+Alt', () => {
+    globalShortcut.register('Ctrl+Alt+N', () => {
         toggleWindow();
     });
 }
@@ -294,7 +280,7 @@ async function createWindow() {
         titleBarStyle: 'hidden',
         frame: false,
         backgroundColor: '#000000',
-        alwaysOnTop: config.alwaysOnTop || true,
+        alwaysOnTop: config.alwaysOnTop !== undefined ? config.alwaysOnTop : true,
         resizable: true,
         movable: false,
         skipTaskbar: true
@@ -344,8 +330,6 @@ async function createWindow() {
             saveConfig({ width: bounds.width });
         }
     });
-    
-    setupGlobalShortcuts();
 }
 
 function createTray() {
@@ -355,67 +339,9 @@ function createTray() {
 
     tray = new Tray(createTrayIcon());
 
-    const contextMenu = Menu.buildFromTemplate([
-        {
-            label: 'Запускать при запуске системы',
-            type: 'checkbox',
-            checked: config.runAtStartup || false,
-            click: (menuItem) => {
-                setAutoLaunch(menuItem.checked);
-            }
-        },
-        {
-            label: 'Поверх окон',
-            type: 'checkbox',
-            checked: config.alwaysOnTop || true,
-            click: () => {
-                toggleAlwaysOnTop();
-            }
-        },
-        {
-            label: 'Показать приложение',
-            submenu: [
-                {
-                    label: 'Справа',
-                    type: 'radio',
-                    checked: config.side === 'right',
-                    click: () => {
-                        if (config.side !== 'right') {
-                            toggleSide();
-                        }
-                    }
-                },
-                {
-                    label: 'Слева',
-                    type: 'radio',
-                    checked: config.side === 'left',
-                    click: () => {
-                        if (config.side !== 'left') {
-                            toggleSide();
-                        }
-                    }
-                }
-            ]
-        },
-        { type: 'separator' },
-        {
-            label: 'Проверить обновления',
-            click: () => {
-                checkForUpdates();
-            }
-        },
-        { type: 'separator' },
-        {
-            label: 'Выйти',
-            click: () => {
-                app.isQuitting = true;
-                app.quit();
-            }
-        }
-    ]);
+    updateTrayMenu();
 
     tray.setToolTip('Nuro');
-    tray.setContextMenu(contextMenu);
 
     tray.on('click', () => {
         toggleWindow();
@@ -435,7 +361,7 @@ function updateTrayMenu() {
         {
             label: 'Поверх окон',
             type: 'checkbox',
-            checked: config.alwaysOnTop || true,
+            checked: config.alwaysOnTop !== undefined ? config.alwaysOnTop : true,
             click: () => {
                 toggleAlwaysOnTop();
             }
@@ -510,6 +436,7 @@ app.whenReady().then(async () => {
     await checkForUpdates(true);
     createWindow();
     createTray();
+    setupGlobalShortcuts();
 });
 
 app.on("window-all-closed", (event) => {
