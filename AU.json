@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage, globalShortcut } = require('electron');
+const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -19,7 +19,7 @@ function loadConfig() {
     } catch (error) {
         console.error('Error loading config:', error);
     }
-    return { width: 400, side: 'right', alwaysOnTop: true };
+    return { width: 400, side: 'right', alwaysOnTop: true, pinned: true };
 }
 
 function saveConfig(newConfig) {
@@ -182,7 +182,7 @@ function setAutoLaunch(value) {
     saveConfig({ runAtStartup: value });
 }
 
-function getWindowPosition() {
+function getPinnedWindowPosition() {
     const display = screen.getPrimaryDisplay();
     const { workArea } = display;
     
@@ -213,9 +213,12 @@ function toggleWindow() {
     if (win.isVisible()) {
         win.hide();
     } else {
-        const bounds = getWindowPosition();
-        win.setBounds(bounds);
+        if (config.pinned) {
+            const bounds = getPinnedWindowPosition();
+            win.setBounds(bounds);
+        }
         win.show();
+        win.focus();
     }
 }
 
@@ -235,33 +238,52 @@ function toggleSide() {
     config.side = config.side === 'right' ? 'left' : 'right';
     saveConfig({ side: config.side });
     
-    if (win && !win.isDestroyed() && win.isVisible()) {
-        const bounds = getWindowPosition();
+    if (win && !win.isDestroyed() && win.isVisible() && config.pinned) {
+        const bounds = getPinnedWindowPosition();
         win.setBounds(bounds);
     }
     
     updateTrayMenu();
 }
 
-function setupGlobalShortcuts() {
-    const ret = globalShortcut.register('Control+Alt', () => {
-        toggleWindow();
-    });
+function togglePinned() {
+    const newValue = !config.pinned;
+    config.pinned = newValue;
+    saveConfig({ pinned: newValue });
     
-    if (!ret) {
-        console.log('Global shortcut registration failed');
+    if (win && !win.isDestroyed()) {
+        if (newValue) {
+            const bounds = getPinnedWindowPosition();
+            win.setBounds(bounds);
+            win.setMovable(false);
+            win.setResizable(true);
+            win.setMinWidth(300);
+            win.setMaxWidth(800);
+            win.setMinHeight(bounds.height);
+            win.setMaxHeight(bounds.height);
+        } else {
+            win.setMovable(true);
+            win.setResizable(true);
+            win.setMinWidth(300);
+            win.setMaxWidth(null);
+            win.setMinHeight(200);
+            win.setMaxHeight(null);
+        }
     }
+    
+    updateTrayMenu();
 }
 
-async function createWindow() {
-    const configUrl = await fetchConfig();
-    if (!configUrl) {
-        showConnectionError();
-        return;
-    }
-
+function createWindow() {
+    const configUrl = 'https://raw.githubusercontent.com/ECCSco/Nuro_Configuration/refs/heads/main/config.json';
+    
     config = loadConfig();
-    const bounds = getWindowPosition();
+    const bounds = config.pinned ? getPinnedWindowPosition() : { 
+        width: config.width || 400, 
+        height: 600, 
+        x: undefined, 
+        y: undefined 
+    };
 
     win = new BrowserWindow({
         width: bounds.width,
@@ -277,16 +299,16 @@ async function createWindow() {
             webSecurity: true
         },
         show: false,
-        minWidth: 300,
-        maxWidth: 800,
-        minHeight: bounds.height,
-        maxHeight: bounds.height,
+        minWidth: config.pinned ? 300 : 300,
+        maxWidth: config.pinned ? 800 : null,
+        minHeight: config.pinned ? bounds.height : 200,
+        maxHeight: config.pinned ? bounds.height : null,
         titleBarStyle: 'hidden',
         frame: false,
         backgroundColor: '#000000',
         alwaysOnTop: config.alwaysOnTop !== undefined ? config.alwaysOnTop : true,
         resizable: true,
-        movable: false,
+        movable: !config.pinned,
         skipTaskbar: true
     });
 
@@ -302,8 +324,7 @@ async function createWindow() {
                 height: 100vh !important;
             }
             
-            body::before {
-                content: '';
+            .drag-handle {
                 position: fixed;
                 top: 0;
                 left: 0;
@@ -313,7 +334,25 @@ async function createWindow() {
                 -webkit-app-region: drag;
                 z-index: 10000;
             }
+            
+            body {
+                margin-top: 30px !important;
+                height: calc(100vh - 30px) !important;
+                overflow: auto !important;
+            }
+            
+            #app, .app, .container, .root, [data-reactroot], [id*='root'], [class*='root'] {
+                margin-top: 0 !important;
+            }
         `);
+
+        win.webContents.executeJavaScript(`
+            if (!document.querySelector('.drag-handle')) {
+                const dragHandle = document.createElement('div');
+                dragHandle.className = 'drag-handle';
+                document.body.appendChild(dragHandle);
+            }
+        `).catch(() => {});
     });
 
     win.webContents.on('did-fail-load', () => {
@@ -328,7 +367,7 @@ async function createWindow() {
     });
 
     win.on('blur', () => {
-        if (config.alwaysOnTop === false && win.isVisible()) {
+        if (config.alwaysOnTop === false && win.isVisible() && config.pinned) {
             setTimeout(() => {
                 if (win && !win.isDestroyed() && !win.isFocused()) {
                     const focusedWindow = BrowserWindow.getFocusedWindow();
@@ -358,7 +397,7 @@ function createTray() {
 
     updateTrayMenu();
 
-    tray.setToolTip('Nuro');
+    tray.setToolTip('Nuro - Щелчок для показа/скрытия');
 
     tray.on('click', () => {
         toggleWindow();
@@ -367,6 +406,13 @@ function createTray() {
 
 function updateTrayMenu() {
     const contextMenu = Menu.buildFromTemplate([
+        {
+            label: 'Показать/Скрыть',
+            click: () => {
+                toggleWindow();
+            }
+        },
+        { type: 'separator' },
         {
             label: 'Запускать при запуске системы',
             type: 'checkbox',
@@ -381,6 +427,12 @@ function updateTrayMenu() {
             checked: config.alwaysOnTop !== undefined ? config.alwaysOnTop : true,
             click: () => {
                 toggleAlwaysOnTop();
+            }
+        },
+        {
+            label: config.pinned ? 'Свободное окно' : 'Закрепить окно',
+            click: () => {
+                togglePinned();
             }
         },
         {
@@ -461,19 +513,10 @@ app.whenReady().then(async () => {
     });
 });
 
-app.on('ready', () => {
-    setupGlobalShortcuts();
-});
-
 app.on("window-all-closed", (event) => {
     event.preventDefault();
 });
 
 app.on('before-quit', () => {
     app.isQuitting = true;
-    globalShortcut.unregisterAll();
-});
-
-app.on('will-quit', () => {
-    globalShortcut.unregisterAll();
 });
