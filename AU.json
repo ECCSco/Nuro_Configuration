@@ -91,6 +91,10 @@ function showCustomNotification(title, message) {
         return;
     }
 
+    if (!win.isVisible()) {
+        win.show();
+    }
+
     win.webContents.executeJavaScript(`
         (function() {
             const notification = document.createElement('div');
@@ -401,8 +405,8 @@ async function createWindow() {
     });
 
     win.on('resize', () => {
+        const bounds = win.getBounds();
         if (config.isFreeWindow) {
-            const bounds = win.getBounds();
             saveConfig({ 
                 freeWindowBounds: {
                     x: bounds.x,
@@ -412,7 +416,6 @@ async function createWindow() {
                 }
             });
         } else {
-            const bounds = win.getBounds();
             if (bounds.width !== config.width) {
                 config.width = bounds.width;
                 saveConfig({ width: bounds.width });
@@ -478,10 +481,10 @@ function updateTrayMenu() {
             }
         },
         {
-            label: 'Показать окно',
+            label: 'Переместить окно',
             submenu: [
                 {
-                    label: 'Справа',
+                    label: 'Налево',
                     type: 'radio',
                     checked: config.side === 'right',
                     click: () => {
@@ -491,7 +494,7 @@ function updateTrayMenu() {
                     }
                 },
                 {
-                    label: 'Слева',
+                    label: 'Направо',
                     type: 'radio',
                     checked: config.side === 'left',
                     click: () => {
@@ -544,9 +547,10 @@ app.whenReady().then(async () => {
         setAutoLaunch(true);
     }
     
-    await checkForUpdates(true);
     await createWindow();
     createTray();
+    
+    await checkForUpdates(true);
     
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
