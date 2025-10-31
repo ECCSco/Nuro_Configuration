@@ -481,10 +481,10 @@ function updateTrayMenu() {
             }
         },
         {
-            label: 'Переместить окно',
+            label: 'Переместить окно в',
             submenu: [
                 {
-                    label: 'Налево',
+                    label: 'Право',
                     type: 'radio',
                     checked: config.side === 'right',
                     click: () => {
@@ -494,7 +494,7 @@ function updateTrayMenu() {
                     }
                 },
                 {
-                    label: 'Направо',
+                    label: 'Лево',
                     type: 'radio',
                     checked: config.side === 'left',
                     click: () => {
