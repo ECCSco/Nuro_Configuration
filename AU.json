@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -19,7 +19,7 @@ function loadConfig() {
     } catch (error) {
         console.error('Error loading config:', error);
     }
-    return { width: 400, side: 'right', alwaysOnTop: true, isFreeWindow: false };
+    return { width: 400, side: 'right', alwaysOnTop: true };
 }
 
 function saveConfig(newConfig) {
@@ -213,10 +213,8 @@ function toggleWindow() {
     if (win.isVisible()) {
         win.hide();
     } else {
-        if (!config.isFreeWindow) {
-            const bounds = getWindowPosition();
-            win.setBounds(bounds);
-        }
+        const bounds = getWindowPosition();
+        win.setBounds(bounds);
         win.show();
         win.focus();
     }
@@ -238,7 +236,7 @@ function toggleSide() {
     config.side = config.side === 'right' ? 'left' : 'right';
     saveConfig({ side: config.side });
     
-    if (win && !win.isDestroyed() && win.isVisible() && !config.isFreeWindow) {
+    if (win && !win.isDestroyed() && win.isVisible()) {
         const bounds = getWindowPosition();
         win.setBounds(bounds);
     }
@@ -246,32 +244,18 @@ function toggleSide() {
     updateTrayMenu();
 }
 
-function toggleFreeWindow() {
-    const newValue = !config.isFreeWindow;
-    config.isFreeWindow = newValue;
-    saveConfig({ isFreeWindow: newValue });
-
-    if (win && !win.isDestroyed()) {
-        if (newValue) {
-            win.setMovable(true);
-            win.setResizable(true);
-            win.setMinWidth(300);
-            win.setMaxWidth(Number.MAX_SAFE_INTEGER);
-            win.setMinHeight(200);
-            win.setMaxHeight(Number.MAX_SAFE_INTEGER);
-        } else {
-            win.setMovable(false);
-            win.setResizable(true);
-            const bounds = getWindowPosition();
-            win.setBounds(bounds);
-            win.setMinWidth(bounds.width);
-            win.setMaxWidth(bounds.width);
-            win.setMinHeight(bounds.height);
-            win.setMaxHeight(bounds.height);
+function setupGlobalShortcuts() {
+    try {
+        const ret = globalShortcut.register('CommandOrControl+Shift+N', () => {
+            toggleWindow();
+        });
+        
+        if (!ret) {
+            console.log('Global shortcut registration failed');
         }
+    } catch (error) {
+        console.error('Error setting up global shortcuts:', error);
     }
-    
-    updateTrayMenu();
 }
 
 function createWindow() {
@@ -280,7 +264,7 @@ function createWindow() {
     config = loadConfig();
     const bounds = getWindowPosition();
 
-    const windowOptions = {
+    win = new BrowserWindow({
         width: bounds.width,
         height: bounds.height,
         x: bounds.x,
@@ -294,29 +278,18 @@ function createWindow() {
             webSecurity: true
         },
         show: false,
+        minWidth: 300,
+        maxWidth: 800,
+        minHeight: bounds.height,
+        maxHeight: bounds.height,
         titleBarStyle: 'hidden',
         frame: false,
         backgroundColor: '#000000',
         alwaysOnTop: config.alwaysOnTop !== undefined ? config.alwaysOnTop : true,
         resizable: true,
+        movable: false,
         skipTaskbar: true
-    };
-
-    if (config.isFreeWindow) {
-        windowOptions.movable = true;
-        windowOptions.minWidth = 300;
-        windowOptions.maxWidth = Number.MAX_SAFE_INTEGER;
-        windowOptions.minHeight = 200;
-        windowOptions.maxHeight = Number.MAX_SAFE_INTEGER;
-    } else {
-        windowOptions.movable = false;
-        windowOptions.minWidth = bounds.width;
-        windowOptions.maxWidth = bounds.width;
-        windowOptions.minHeight = bounds.height;
-        windowOptions.maxHeight = bounds.height;
-    }
-
-    win = new BrowserWindow(windowOptions);
+    });
 
     win.loadURL(configUrl);
 
@@ -330,7 +303,8 @@ function createWindow() {
                 height: 100vh !important;
             }
             
-            #nuro-drag-area {
+            body::before {
+                content: '';
                 position: fixed;
                 top: 0;
                 left: 0;
@@ -339,19 +313,6 @@ function createWindow() {
                 background: transparent;
                 -webkit-app-region: drag;
                 z-index: 10000;
-            }
-        `);
-
-        win.webContents.executeJavaScript(`
-            if (!document.getElementById('nuro-drag-area')) {
-                const dragArea = document.createElement('div');
-                dragArea.id = 'nuro-drag-area';
-                document.body.appendChild(dragArea);
-                
-                dragArea.addEventListener('dblclick', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                });
             }
         `);
     });
@@ -381,12 +342,10 @@ function createWindow() {
     });
 
     win.on('resize', () => {
-        if (!config.isFreeWindow) {
-            const bounds = win.getBounds();
-            if (bounds.width !== config.width) {
-                config.width = bounds.width;
-                saveConfig({ width: bounds.width });
-            }
+        const bounds = win.getBounds();
+        if (bounds.width !== config.width) {
+            config.width = bounds.width;
+            saveConfig({ width: bounds.width });
         }
     });
 }
@@ -414,20 +373,12 @@ function createTray() {
 function updateTrayMenu() {
     const contextMenu = Menu.buildFromTemplate([
         {
-            label: 'Показать/Скрыть',
+            label: 'Показать/Скрыть (Ctrl+Shift+N)',
             click: () => {
                 toggleWindow();
             }
         },
         { type: 'separator' },
-        {
-            label: 'Свободное окно',
-            type: 'checkbox',
-            checked: config.isFreeWindow || false,
-            click: () => {
-                toggleFreeWindow();
-            }
-        },
         {
             label: 'Запускать при запуске системы',
             type: 'checkbox',
@@ -514,6 +465,7 @@ app.whenReady().then(async () => {
     await checkForUpdates(true);
     createWindow();
     createTray();
+    setupGlobalShortcuts();
     
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
@@ -528,4 +480,9 @@ app.on("window-all-closed", (event) => {
 
 app.on('before-quit', () => {
     app.isQuitting = true;
+    globalShortcut.unregisterAll();
+});
+
+app.on('will-quit', () => {
+    globalShortcut.unregisterAll();
 });
