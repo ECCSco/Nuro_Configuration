@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage, globalShortcut } = require('electron');
+const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -19,7 +19,7 @@ function loadConfig() {
     } catch (error) {
         console.error('Error loading config:', error);
     }
-    return { width: 400, side: 'right', alwaysOnTop: true };
+    return { width: 400, side: 'right', alwaysOnTop: true, isFreeWindow: false };
 }
 
 function saveConfig(newConfig) {
@@ -213,8 +213,10 @@ function toggleWindow() {
     if (win.isVisible()) {
         win.hide();
     } else {
-        const bounds = getWindowPosition();
-        win.setBounds(bounds);
+        if (!config.isFreeWindow) {
+            const bounds = getWindowPosition();
+            win.setBounds(bounds);
+        }
         win.show();
     }
 }
@@ -235,7 +237,7 @@ function toggleSide() {
     config.side = config.side === 'right' ? 'left' : 'right';
     saveConfig({ side: config.side });
     
-    if (win && !win.isDestroyed() && win.isVisible()) {
+    if (win && !win.isDestroyed() && win.isVisible() && !config.isFreeWindow) {
         const bounds = getWindowPosition();
         win.setBounds(bounds);
     }
@@ -243,14 +245,26 @@ function toggleSide() {
     updateTrayMenu();
 }
 
-function setupGlobalShortcuts() {
-    const ret = globalShortcut.register('Control+Alt', () => {
-        toggleWindow();
-    });
-    
-    if (!ret) {
-        console.log('Global shortcut registration failed');
+function toggleFreeWindow() {
+    const newValue = !config.isFreeWindow;
+    config.isFreeWindow = newValue;
+    saveConfig({ isFreeWindow: newValue });
+
+    if (win && !win.isDestroyed()) {
+        if (newValue) {
+            win.setMovable(true);
+            win.setResizable(true);
+            win.setMinSize(300, 400);
+            win.setMaxSize(4000, 4000);
+        } else {
+            win.setMovable(false);
+            win.setResizable(false);
+            const bounds = getWindowPosition();
+            win.setBounds(bounds);
+        }
     }
+    
+    updateTrayMenu();
 }
 
 async function createWindow() {
@@ -277,16 +291,16 @@ async function createWindow() {
             webSecurity: true
         },
         show: false,
-        minWidth: 300,
-        maxWidth: 800,
-        minHeight: bounds.height,
-        maxHeight: bounds.height,
+        minWidth: config.isFreeWindow ? 300 : bounds.width,
+        maxWidth: config.isFreeWindow ? 4000 : bounds.width,
+        minHeight: config.isFreeWindow ? 400 : bounds.height,
+        maxHeight: config.isFreeWindow ? 4000 : bounds.height,
         titleBarStyle: 'hidden',
         frame: false,
         backgroundColor: '#000000',
         alwaysOnTop: config.alwaysOnTop !== undefined ? config.alwaysOnTop : true,
-        resizable: true,
-        movable: false,
+        resizable: config.isFreeWindow,
+        movable: config.isFreeWindow,
         skipTaskbar: true
     });
 
@@ -310,7 +324,7 @@ async function createWindow() {
                 right: 0;
                 height: 30px;
                 background: transparent;
-                -webkit-app-region: drag;
+                -webkit-app-region: ${config.isFreeWindow ? 'drag' : 'no-drag'};
                 z-index: 10000;
             }
         `);
@@ -342,7 +356,7 @@ async function createWindow() {
 
     win.on('resize', () => {
         const bounds = win.getBounds();
-        if (bounds.width !== config.width) {
+        if (bounds.width !== config.width && !config.isFreeWindow) {
             config.width = bounds.width;
             saveConfig({ width: bounds.width });
         }
@@ -381,6 +395,14 @@ function updateTrayMenu() {
             checked: config.alwaysOnTop !== undefined ? config.alwaysOnTop : true,
             click: () => {
                 toggleAlwaysOnTop();
+            }
+        },
+        {
+            label: 'Свободное окно',
+            type: 'checkbox',
+            checked: config.isFreeWindow,
+            click: () => {
+                toggleFreeWindow();
             }
         },
         {
@@ -461,19 +483,10 @@ app.whenReady().then(async () => {
     });
 });
 
-app.on('ready', () => {
-    setupGlobalShortcuts();
-});
-
 app.on("window-all-closed", (event) => {
     event.preventDefault();
 });
 
 app.on('before-quit', () => {
     app.isQuitting = true;
-    globalShortcut.unregisterAll();
-});
-
-app.on('will-quit', () => {
-    globalShortcut.unregisterAll();
 });
