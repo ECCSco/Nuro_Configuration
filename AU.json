@@ -245,6 +245,10 @@ function getVisibleWindowPosition() {
     };
 }
 
+function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
 async function slideWindow(show) {
     if (isAnimating || !win) return;
     
@@ -262,7 +266,7 @@ async function slideWindow(show) {
         await new Promise(resolve => setTimeout(resolve, stepTime));
         if (!win || win.isDestroyed()) break;
         
-        const progress = i / steps;
+        const progress = easeInOutCubic(i / steps);
         const currentX = startBounds.x + (deltaX * progress);
         const currentWidth = startBounds.width + (deltaWidth * progress);
         
@@ -299,11 +303,11 @@ function toggleWindow() {
 function updateWindowForPinnedState() {
     if (!win || win.isDestroyed()) return;
     
+    win.setAlwaysOnTop(true);
+    
     if (config.pinned) {
-        win.setAlwaysOnTop(true);
         slideWindow(true);
     } else {
-        win.setAlwaysOnTop(false);
         if (win.isVisible()) {
             slideWindow(false);
         }
@@ -333,7 +337,7 @@ function toggleSide() {
 }
 
 function setupGlobalShortcuts() {
-    globalShortcut.register('Backspace', () => {
+    globalShortcut.register('F12', () => {
         toggleWindow();
     });
 }
@@ -369,7 +373,7 @@ async function createWindow() {
         titleBarStyle: 'hidden',
         frame: false,
         backgroundColor: '#000000',
-        alwaysOnTop: config.pinned || false,
+        alwaysOnTop: true,
         resizable: true,
         movable: false,
         skipTaskbar: true
