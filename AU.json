@@ -1,10 +1,12 @@
-const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage, ipcMain } = require('electron');
+const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
 let win;
 let tray;
 let config = {};
+let isAnimating = false;
+let mouseWatchInterval;
 
 app.name = 'Nuro';
 
@@ -200,9 +202,29 @@ function setAutoLaunch(value) {
     saveConfig({ runAtStartup: value });
 }
 
-function updateWindowPosition() {
-    if (!win || win.isDestroyed()) return;
+function getWindowPosition() {
+    const display = screen.getPrimaryDisplay();
+    const { workArea } = display;
+    
+    const width = config.width || 400;
+    const side = config.side || 'right';
+    
+    let x;
+    if (side === 'right') {
+        x = workArea.x + workArea.width;
+    } else {
+        x = workArea.x - width;
+    }
 
+    return {
+        x: x,
+        y: workArea.y,
+        width: width,
+        height: workArea.height
+    };
+}
+
+function getVisibleWindowPosition() {
     const display = screen.getPrimaryDisplay();
     const { workArea } = display;
     
@@ -216,58 +238,132 @@ function updateWindowPosition() {
         x = workArea.x;
     }
 
-    win.setBounds({
+    return {
         x: x,
         y: workArea.y,
         width: width,
         height: workArea.height
-    });
+    };
+}
 
+async function slideWindow(show) {
+    if (isAnimating || !win) return;
+    
+    isAnimating = true;
+    const targetBounds = show ? getVisibleWindowPosition() : getWindowPosition();
+    const steps = 20;
+    const duration = 300;
+    const stepTime = duration / steps;
+
+    const startBounds = win.getBounds();
+    const deltaX = targetBounds.x - startBounds.x;
+    const deltaWidth = targetBounds.width - startBounds.width;
+
+    for (let i = 0; i <= steps; i++) {
+        await new Promise(resolve => setTimeout(resolve, stepTime));
+        if (!win || win.isDestroyed()) break;
+        
+        const progress = i / steps;
+        const currentX = startBounds.x + (deltaX * progress);
+        const currentWidth = startBounds.width + (deltaWidth * progress);
+        
+        win.setBounds({
+            x: Math.round(currentX),
+            y: targetBounds.y,
+            width: Math.round(currentWidth),
+            height: targetBounds.height
+        });
+    }
+
+    if (win && !win.isDestroyed()) {
+        win.setBounds(targetBounds);
+        if (show) {
+            win.showInactive();
+        } else if (!config.pinned) {
+            win.hide();
+        }
+    }
+    
+    isAnimating = false;
+}
+
+function startMouseWatch() {
+    if (mouseWatchInterval) clearInterval(mouseWatchInterval);
+    
+    mouseWatchInterval = setInterval(() => {
+        if (config.pinned || !win || isAnimating) return;
+        
+        const cursor = screen.getCursorScreenPoint();
+        const display = screen.getDisplayNearestPoint(cursor);
+        const { workArea } = display;
+        const side = config.side || 'right';
+        
+        const activationZone = 10;
+        let inActivationZone = false;
+        
+        if (side === 'right') {
+            inActivationZone = cursor.x >= workArea.x + workArea.width - activationZone && 
+                              cursor.x <= workArea.x + workArea.width;
+        } else {
+            inActivationZone = cursor.x >= workArea.x && 
+                              cursor.x <= workArea.x + activationZone;
+        }
+        
+        const winBounds = win.getBounds();
+        const cursorInWindow = cursor.x >= winBounds.x && 
+                              cursor.x <= winBounds.x + winBounds.width &&
+                              cursor.y >= winBounds.y && 
+                              cursor.y <= winBounds.y + winBounds.height;
+        
+        if (inActivationZone && !win.isVisible() && !cursorInWindow) {
+            slideWindow(true);
+        } else if (!inActivationZone && !cursorInWindow && win.isVisible() && !config.pinned) {
+            slideWindow(false);
+        }
+    }, 50);
+}
+
+function updateWindowForPinnedState() {
+    if (!win || win.isDestroyed()) return;
+    
     if (config.pinned) {
         win.setAlwaysOnTop(true);
-        win.showInactive();
+        slideWindow(true);
     } else {
         win.setAlwaysOnTop(false);
-        win.hide();
+        const cursor = screen.getCursorScreenPoint();
+        const winBounds = win.getBounds();
+        const cursorInWindow = cursor.x >= winBounds.x && 
+                              cursor.x <= winBounds.x + winBounds.width &&
+                              cursor.y >= winBounds.y && 
+                              cursor.y <= winBounds.y + winBounds.height;
+        
+        if (!cursorInWindow) {
+            slideWindow(false);
+        }
     }
 }
 
 function togglePinned() {
     config.pinned = !config.pinned;
     saveConfig({ pinned: config.pinned });
-    updateWindowPosition();
+    updateWindowForPinnedState();
     updateTrayMenu();
 }
 
 function toggleSide() {
     config.side = config.side === 'right' ? 'left' : 'right';
     saveConfig({ side: config.side });
-    updateWindowPosition();
-    updateTrayMenu();
-}
-
-function changeWidth() {
-    dialog.showMessageBox(win, {
-        type: 'question',
-        title: 'Изменение ширины',
-        message: 'Введите новую ширину панели (от 300 до 800):',
-        buttons: ['OK', 'Cancel'],
-        defaultId: 0,
-        cancelId: 1,
-        input: 'text',
-        text: (config.width || 400).toString()
-    }).then(result => {
-        if (result.response === 0) {
-            const newWidth = parseInt(result.input);
-            if (newWidth >= 300 && newWidth <= 800) {
-                config.width = newWidth;
-                saveConfig({ width: newWidth });
-                updateWindowPosition();
-            } else {
-                dialog.showErrorBox('Ошибка', 'Ширина должна быть от 300 до 800 пикселей.');
+    if (win && !win.isDestroyed()) {
+        win.hide();
+        setTimeout(() => {
+            const newBounds = getWindowPosition();
+            win.setBounds(newBounds);
+            if (config.pinned) {
+                slideWindow(true);
             }
-        }
-    });
+        }, 100);
+    }
 }
 
 async function createWindow() {
@@ -278,24 +374,13 @@ async function createWindow() {
     }
 
     config = loadConfig();
-    const display = screen.getPrimaryDisplay();
-    const { workArea } = display;
-    
-    const width = config.width || 400;
-    const side = config.side || 'right';
-    
-    let x;
-    if (side === 'right') {
-        x = workArea.x + workArea.width - width;
-    } else {
-        x = workArea.x;
-    }
+    const initialBounds = getWindowPosition();
 
     win = new BrowserWindow({
-        width: width,
-        height: workArea.height,
-        x: x,
-        y: workArea.y,
+        width: initialBounds.width,
+        height: initialBounds.height,
+        x: initialBounds.x,
+        y: initialBounds.y,
         autoHideMenuBar: true,
         icon: path.join(__dirname, 'NuroIcon.ico'),
         webPreferences: {
@@ -305,18 +390,25 @@ async function createWindow() {
             webSecurity: true
         },
         show: false,
-        opacity: 0,
         minWidth: 300,
         maxWidth: 800,
-        minHeight: workArea.height,
-        maxHeight: workArea.height,
+        minHeight: initialBounds.height,
+        maxHeight: initialBounds.height,
         titleBarStyle: 'hidden',
         frame: false,
         backgroundColor: '#000000',
         alwaysOnTop: config.pinned || false,
         resizable: true,
-        movable: false
+        movable: false,
+        skipTaskbar: true
     });
+
+    const side = config.side || 'right';
+    if (side === 'right') {
+        win.setResizable(true);
+    } else {
+        win.setResizable(true);
+    }
 
     win.loadURL(configUrl);
 
@@ -343,16 +435,9 @@ async function createWindow() {
             }
         `);
 
-        win.show();
-        let opacity = 0;
-        const fadeInInterval = setInterval(() => {
-            opacity += 0.04;
-            win.setOpacity(opacity);
-            
-            if (opacity >= 1) {
-                clearInterval(fadeInInterval);
-            }
-        }, 30);
+        if (config.pinned) {
+            slideWindow(true);
+        }
     });
 
     win.webContents.on('did-fail-load', () => {
@@ -368,7 +453,16 @@ async function createWindow() {
 
     win.on('blur', () => {
         if (!config.pinned && win.isVisible()) {
-            win.hide();
+            const cursor = screen.getCursorScreenPoint();
+            const winBounds = win.getBounds();
+            const cursorInWindow = cursor.x >= winBounds.x && 
+                                  cursor.x <= winBounds.x + winBounds.width &&
+                                  cursor.y >= winBounds.y && 
+                                  cursor.y <= winBounds.y + winBounds.height;
+            
+            if (!cursorInWindow) {
+                slideWindow(false);
+            }
         }
     });
 
@@ -377,8 +471,15 @@ async function createWindow() {
         if (bounds.width !== config.width) {
             config.width = bounds.width;
             saveConfig({ width: bounds.width });
+            
+            if (win.isVisible()) {
+                const visiblePos = getVisibleWindowPosition();
+                win.setBounds(visiblePos);
+            }
         }
     });
+
+    startMouseWatch();
 }
 
 function createTray() {
@@ -430,12 +531,6 @@ function createTray() {
                 }
             ]
         },
-        {
-            label: 'Изменить ширину',
-            click: () => {
-                changeWidth();
-            }
-        },
         { type: 'separator' },
         {
             label: 'Проверить обновления',
@@ -458,9 +553,9 @@ function createTray() {
 
     tray.on('click', () => {
         if (win && !win.isDestroyed() && win.isVisible()) {
-            win.hide();
+            slideWindow(false);
         } else {
-            showWindow();
+            slideWindow(true);
         }
     });
 }
@@ -508,12 +603,6 @@ function updateTrayMenu() {
                 }
             ]
         },
-        {
-            label: 'Изменить ширину',
-            click: () => {
-                changeWidth();
-            }
-        },
         { type: 'separator' },
         {
             label: 'Проверить обновления',
@@ -534,28 +623,19 @@ function updateTrayMenu() {
     tray.setContextMenu(contextMenu);
 }
 
-function showWindow() {
-    if (win) {
-        if (win.isDestroyed()) {
-            createWindow();
-            return;
-        }
-        
-        updateWindowPosition();
-        win.show();
-        win.focus();
-    } else {
-        createWindow();
-    }
-}
-
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
     app.quit();
 } else {
     app.on('second-instance', () => {
-        showWindow();
+        if (win) {
+            if (win.isDestroyed()) {
+                createWindow();
+            } else {
+                slideWindow(true);
+            }
+        }
     });
 }
 
@@ -576,4 +656,7 @@ app.on("window-all-closed", (event) => {
 
 app.on('before-quit', () => {
     app.isQuitting = true;
+    if (mouseWatchInterval) {
+        clearInterval(mouseWatchInterval);
+    }
 });
