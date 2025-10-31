@@ -252,15 +252,47 @@ function toggleFreeWindow() {
 
     if (win && !win.isDestroyed()) {
         if (newValue) {
+            const currentBounds = win.getBounds();
+            saveConfig({ 
+                freeWindowBounds: {
+                    x: currentBounds.x,
+                    y: currentBounds.y,
+                    width: currentBounds.width,
+                    height: currentBounds.height
+                }
+            });
+            
             win.setMovable(true);
             win.setResizable(true);
-            win.setMinSize(300, 400);
-            win.setMaxSize(4000, 4000);
+            win.setMinimizable(true);
+            win.setMaximizable(true);
+            win.setMinimumSize(300, 400);
+            win.setMaximumSize(4000, 4000);
+            
+            win.webContents.executeJavaScript(`
+                document.body.style.setProperty('--app-region', 'drag');
+                const dragArea = document.querySelector('body::before');
+                if (dragArea) {
+                    dragArea.style.webkitAppRegion = 'drag';
+                }
+            `).catch(() => {});
         } else {
             win.setMovable(false);
             win.setResizable(false);
+            win.setMinimizable(true);
+            win.setMaximizable(false);
             const bounds = getWindowPosition();
             win.setBounds(bounds);
+            win.setMinimumSize(bounds.width, bounds.height);
+            win.setMaximumSize(bounds.width, bounds.height);
+            
+            win.webContents.executeJavaScript(`
+                document.body.style.setProperty('--app-region', 'no-drag');
+                const dragArea = document.querySelector('body::before');
+                if (dragArea) {
+                    dragArea.style.webkitAppRegion = 'no-drag';
+                }
+            `).catch(() => {});
         }
     }
     
@@ -275,13 +307,8 @@ async function createWindow() {
     }
 
     config = loadConfig();
-    const bounds = getWindowPosition();
-
-    win = new BrowserWindow({
-        width: bounds.width,
-        height: bounds.height,
-        x: bounds.x,
-        y: bounds.y,
+    
+    let windowOptions = {
         autoHideMenuBar: true,
         icon: path.join(__dirname, 'NuroIcon.ico'),
         webPreferences: {
@@ -290,23 +317,39 @@ async function createWindow() {
             enableRemoteModule: false,
             webSecurity: true
         },
-        show: false,
-        minWidth: config.isFreeWindow ? 300 : bounds.width,
-        maxWidth: config.isFreeWindow ? 4000 : bounds.width,
-        minHeight: config.isFreeWindow ? 400 : bounds.height,
-        maxHeight: config.isFreeWindow ? 4000 : bounds.height,
+        show: true,
         titleBarStyle: 'hidden',
         frame: false,
         backgroundColor: '#000000',
         alwaysOnTop: config.alwaysOnTop !== undefined ? config.alwaysOnTop : true,
-        resizable: config.isFreeWindow,
-        movable: config.isFreeWindow,
         skipTaskbar: true
-    });
+    };
+
+    if (config.isFreeWindow && config.freeWindowBounds) {
+        Object.assign(windowOptions, config.freeWindowBounds);
+        windowOptions.resizable = true;
+        windowOptions.movable = true;
+        windowOptions.minWidth = 300;
+        windowOptions.maxWidth = 4000;
+        windowOptions.minHeight = 400;
+        windowOptions.maxHeight = 4000;
+    } else {
+        const bounds = getWindowPosition();
+        Object.assign(windowOptions, bounds);
+        windowOptions.resizable = false;
+        windowOptions.movable = false;
+        windowOptions.minWidth = bounds.width;
+        windowOptions.maxWidth = bounds.width;
+        windowOptions.minHeight = bounds.height;
+        windowOptions.maxHeight = bounds.height;
+    }
+
+    win = new BrowserWindow(windowOptions);
 
     win.loadURL(configUrl);
 
     win.webContents.on("did-finish-load", () => {
+        const dragRegion = config.isFreeWindow ? 'drag' : 'no-drag';
         win.webContents.insertCSS(`
             html, body {
                 overflow: hidden !important;
@@ -324,7 +367,7 @@ async function createWindow() {
                 right: 0;
                 height: 30px;
                 background: transparent;
-                -webkit-app-region: ${config.isFreeWindow ? 'drag' : 'no-drag'};
+                -webkit-app-region: ${dragRegion};
                 z-index: 10000;
             }
         `);
@@ -355,10 +398,36 @@ async function createWindow() {
     });
 
     win.on('resize', () => {
-        const bounds = win.getBounds();
-        if (bounds.width !== config.width && !config.isFreeWindow) {
-            config.width = bounds.width;
-            saveConfig({ width: bounds.width });
+        if (config.isFreeWindow) {
+            const bounds = win.getBounds();
+            saveConfig({ 
+                freeWindowBounds: {
+                    x: bounds.x,
+                    y: bounds.y,
+                    width: bounds.width,
+                    height: bounds.height
+                }
+            });
+        } else {
+            const bounds = win.getBounds();
+            if (bounds.width !== config.width) {
+                config.width = bounds.width;
+                saveConfig({ width: bounds.width });
+            }
+        }
+    });
+
+    win.on('move', () => {
+        if (config.isFreeWindow) {
+            const bounds = win.getBounds();
+            saveConfig({ 
+                freeWindowBounds: {
+                    x: bounds.x,
+                    y: bounds.y,
+                    width: bounds.width,
+                    height: bounds.height
+                }
+            });
         }
     });
 }
@@ -473,7 +542,7 @@ app.whenReady().then(async () => {
     }
     
     await checkForUpdates(true);
-    createWindow();
+    await createWindow();
     createTray();
     
     app.on('activate', () => {
