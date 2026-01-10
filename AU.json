@@ -237,7 +237,11 @@ function toggleAlwaysOnTop() {
     saveConfig({ alwaysOnTop: newValue });
     
     if (win && !win.isDestroyed()) {
-        win.setAlwaysOnTop(newValue);
+        if (newValue) {
+            win.setAlwaysOnTop(true, 'screen-saver');
+        } else {
+            win.setAlwaysOnTop(false);
+        }
     }
     
     updateTrayMenu();
@@ -327,7 +331,7 @@ async function createWindow() {
         titleBarStyle: 'hidden',
         frame: false,
         backgroundColor: '#000000',
-        alwaysOnTop: config.alwaysOnTop !== undefined ? config.alwaysOnTop : true,
+        alwaysOnTop: config.alwaysOnTop ? 'screen-saver' : false,
         skipTaskbar: true
     };
 
@@ -434,6 +438,12 @@ async function createWindow() {
                     height: bounds.height
                 }
             });
+        }
+    });
+
+    win.on('show', () => {
+        if (config.alwaysOnTop) {
+            win.setAlwaysOnTop(true, 'screen-saver');
         }
     });
 }
