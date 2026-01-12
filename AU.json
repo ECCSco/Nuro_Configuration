@@ -376,7 +376,7 @@ function createSplashWindow() {
                     color: transparent;
                     letter-spacing: 6px;
                     text-transform: uppercase;
-                    animation: textGradient 4s ease infinite, glow 3s ease-in-out infinite;
+                    animation: textGradient 4s ease infinite;
                     position: relative;
                     text-align: center;
                     line-height: 1;
@@ -394,7 +394,7 @@ function createSplashWindow() {
                     background: linear-gradient(
                         90deg,
                         transparent,
-                        rgba(255, 255, 255, 0.1),
+                        rgba(255, 255, 255, 0.05),
                         transparent
                     );
                     background-size: 200% 100%;
@@ -437,7 +437,7 @@ function createSplashWindow() {
                     width: 2px;
                     height: 0;
                     background: linear-gradient(to bottom, transparent, var(--accent-blue), transparent);
-                    opacity: 0.3;
+                    opacity: 0.2;
                     animation: beamScan 4s linear infinite;
                 }
                 
@@ -446,7 +446,7 @@ function createSplashWindow() {
                     width: 600px;
                     height: 600px;
                     border-radius: 50%;
-                    background: radial-gradient(circle, rgba(100, 181, 246, 0.3) 0%, transparent 70%);
+                    background: radial-gradient(circle, rgba(100, 181, 246, 0.15) 0%, transparent 70%);
                     animation: orbPulse 5s ease-in-out infinite;
                     z-index: 1;
                 }
@@ -475,19 +475,6 @@ function createSplashWindow() {
                     }
                 }
                 
-                @keyframes glow {
-                    0%, 100% {
-                        text-shadow: 0 0 40px rgba(100, 181, 246, 0.9),
-                                    0 0 80px rgba(100, 181, 246, 0.7),
-                                    0 0 120px rgba(100, 181, 246, 0.5);
-                    }
-                    50% {
-                        text-shadow: 0 0 60px rgba(255, 183, 77, 0.9),
-                                    0 0 120px rgba(255, 183, 77, 0.7),
-                                    0 0 180px rgba(255, 183, 77, 0.5);
-                    }
-                }
-                
                 @keyframes shine {
                     0% {
                         background-position: -200% 0;
@@ -503,10 +490,10 @@ function createSplashWindow() {
                         opacity: 0;
                     }
                     10% {
-                        opacity: 0.7;
+                        opacity: 0.5;
                     }
                     90% {
-                        opacity: 0.7;
+                        opacity: 0.5;
                     }
                     100% {
                         transform: translateY(-100px) rotate(360deg);
@@ -520,14 +507,14 @@ function createSplashWindow() {
                         opacity: 0;
                     }
                     10% {
-                        opacity: 0.5;
+                        opacity: 0.3;
                     }
                     50% {
                         height: 100%;
-                        opacity: 0.3;
+                        opacity: 0.2;
                     }
                     90% {
-                        opacity: 0.5;
+                        opacity: 0.3;
                     }
                     100% {
                         height: 0;
@@ -538,11 +525,11 @@ function createSplashWindow() {
                 @keyframes orbPulse {
                     0%, 100% {
                         transform: scale(1);
-                        opacity: 0.3;
+                        opacity: 0.2;
                     }
                     50% {
                         transform: scale(1.3);
-                        opacity: 0.5;
+                        opacity: 0.3;
                     }
                 }
                 
@@ -568,7 +555,7 @@ function createSplashWindow() {
                 const particlesContainer = document.getElementById('particles');
                 const beamsContainer = document.getElementById('beams');
                 
-                for (let i = 0; i < 100; i++) {
+                for (let i = 0; i < 80; i++) {
                     const particle = document.createElement('div');
                     particle.className = 'particle';
                     particle.style.left = Math.random() * 100 + '%';
@@ -579,7 +566,7 @@ function createSplashWindow() {
                     particlesContainer.appendChild(particle);
                 }
                 
-                for (let i = 0; i < 12; i++) {
+                for (let i = 0; i < 8; i++) {
                     const beam = document.createElement('div');
                     beam.className = 'beam';
                     beam.style.left = Math.random() * 100 + '%';
@@ -993,6 +980,13 @@ function updateTrayMenu() {
             label: 'Проверить обновления',
             click: () => {
                 checkForUpdates();
+            }
+        },
+        {
+            label: 'Перезапуск',
+            click: () => {
+                app.relaunch();
+                app.exit();
             }
         },
         { type: 'separator' },
