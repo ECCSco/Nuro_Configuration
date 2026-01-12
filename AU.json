@@ -134,14 +134,14 @@ function showSystemNotification(title, message) {
                 body {
                     width: 320px;
                     height: 80px;
-                    background: rgba(30, 30, 30, 0.9);
+                    background: rgba(0, 0, 0, 0.7);
                     border-radius: 8px;
-                    border: 1px solid rgba(255, 255, 255, 0.1);
                     backdrop-filter: blur(20px);
                     -webkit-backdrop-filter: blur(20px);
                     overflow: hidden;
                     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
                     color: white;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
                 }
                 
                 .notification-content {
@@ -150,7 +150,6 @@ function showSystemNotification(title, message) {
                     display: flex;
                     flex-direction: column;
                     justify-content: center;
-                    position: relative;
                 }
                 
                 .notification-title {
@@ -162,14 +161,14 @@ function showSystemNotification(title, message) {
                 
                 .notification-message {
                     font-size: 13px;
-                    color: rgba(255, 255, 255, 0.8);
+                    color: rgba(255, 255, 255, 0.9);
                     line-height: 1.4;
                 }
                 
                 .notification-close {
                     position: absolute;
-                    top: 10px;
-                    right: 10px;
+                    top: 8px;
+                    right: 8px;
                     width: 24px;
                     height: 24px;
                     background: rgba(255, 255, 255, 0.1);
@@ -179,10 +178,9 @@ function showSystemNotification(title, message) {
                     justify-content: center;
                     cursor: pointer;
                     font-size: 16px;
-                    font-weight: bold;
-                    color: rgba(255, 255, 255, 0.6);
+                    color: rgba(255, 255, 255, 0.7);
                     transition: all 0.2s;
-                    z-index: 1000;
+                    font-weight: 300;
                 }
                 
                 .notification-close:hover {
@@ -205,12 +203,9 @@ function showSystemNotification(title, message) {
                 @keyframes fadeOut {
                     from {
                         opacity: 1;
-                        transform: translateX(0);
                     }
                     to {
                         opacity: 0;
-                        transform: translateX(100%);
-                        visibility: hidden;
                     }
                 }
             </style>
