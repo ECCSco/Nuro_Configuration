@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -86,71 +86,17 @@ function showConnectionError() {
     app.quit();
 }
 
-function showCustomNotification(title, message) {
-    if (!win || win.isDestroyed()) {
-        return;
+function showSystemNotification(title, message) {
+    if (Notification.isSupported()) {
+        const notification = new Notification({
+            title: title,
+            body: message,
+            icon: path.join(__dirname, 'NuroIcon.ico'),
+            silent: false
+        });
+        
+        notification.show();
     }
-
-    if (!win.isVisible()) {
-        win.show();
-    }
-
-    win.webContents.executeJavaScript(`
-        (function() {
-            const notification = document.createElement('div');
-            notification.style.cssText = \`
-                position: fixed;
-                bottom: 20px;
-                left: 50%;
-                transform: translateX(-50%) translateY(20px);
-                background: rgba(0, 0, 0, 0.8);
-                color: white;
-                padding: 15px 25px;
-                border-radius: 8px;
-                z-index: 10000;
-                font-family: Arial, sans-serif;
-                font-size: 14px;
-                max-width: 400px;
-                backdrop-filter: blur(10px);
-                -webkit-backdrop-filter: blur(10px);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-                opacity: 0;
-                transition: all 0.5s ease-in-out;
-            \`;
-            
-            const titleEl = document.createElement('div');
-            titleEl.style.cssText = \`
-                font-weight: bold;
-                margin-bottom: 5px;
-                font-size: 16px;
-            \`;
-            titleEl.textContent = \`${title}\`;
-            
-            const messageEl = document.createElement('div');
-            messageEl.textContent = \`${message}\`;
-            
-            notification.appendChild(titleEl);
-            notification.appendChild(messageEl);
-            
-            document.body.appendChild(notification);
-            
-            requestAnimationFrame(() => {
-                notification.style.opacity = '1';
-                notification.style.transform = 'translateX(-50%) translateY(0)';
-            });
-            
-            setTimeout(() => {
-                notification.style.opacity = '0';
-                notification.style.transform = 'translateX(-50%) translateY(20px)';
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.parentNode.removeChild(notification);
-                    }
-                }, 500);
-            }, 3000);
-        })();
-    `).catch(() => {});
 }
 
 async function checkForUpdates(silent = false) {
@@ -166,19 +112,19 @@ async function checkForUpdates(silent = false) {
             fs.writeFileSync(mainJsPath, githubContent);
             
             if (!silent) {
-                showCustomNotification('Nuro', 'Программа была успешно обновлена');
+                showSystemNotification('Nuro', 'Программа была успешно обновлена');
             }
             
             app.relaunch();
             app.exit();
             return true;
         } else if (!silent) {
-            showCustomNotification('Nuro', 'Обновлений не найдено');
+            showSystemNotification('Nuro', 'Обновлений не найдено');
         }
     } catch (error) {
         console.error('Error checking for updates:', error);
         if (!silent) {
-            showCustomNotification('Nuro', 'Не удалось проверить обновления');
+            showSystemNotification('Nuro', 'Не удалось проверить обновления');
         }
     }
     return false;
@@ -475,6 +421,14 @@ function updateTrayMenu() {
             }
         },
         {
+            label: 'Обновлять при запуске',
+            type: 'checkbox',
+            checked: config.autoUpdateOnStart || false,
+            click: (menuItem) => {
+                saveConfig({ autoUpdateOnStart: menuItem.checked });
+            }
+        },
+        {
             label: 'Поверх окон',
             type: 'checkbox',
             checked: config.alwaysOnTop !== undefined ? config.alwaysOnTop : true,
@@ -560,7 +514,9 @@ app.whenReady().then(async () => {
     await createWindow();
     createTray();
     
-    await checkForUpdates(true);
+    if (config.autoUpdateOnStart) {
+        await checkForUpdates(true);
+    }
     
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
