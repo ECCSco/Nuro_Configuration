@@ -135,7 +135,6 @@ function showSystemNotification(title, message) {
                     width: 320px;
                     height: 80px;
                     background: rgba(0, 0, 0, 0.7);
-                    border-radius: 8px;
                     backdrop-filter: blur(20px);
                     -webkit-backdrop-filter: blur(20px);
                     overflow: hidden;
@@ -167,26 +166,25 @@ function showSystemNotification(title, message) {
                 
                 .notification-close {
                     position: absolute;
-                    top: 8px;
-                    right: 8px;
-                    width: 24px;
-                    height: 24px;
-                    background: rgba(255, 255, 255, 0.1);
-                    border-radius: 50%;
+                    top: 12px;
+                    right: 12px;
+                    width: 32px;
+                    height: 32px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     cursor: pointer;
-                    font-size: 16px;
+                    font-size: 24px;
                     color: rgba(255, 255, 255, 0.7);
                     transition: all 0.2s;
                     font-weight: 300;
+                    background: transparent;
+                    border-radius: 50%;
                 }
                 
                 .notification-close:hover {
-                    background: rgba(255, 255, 255, 0.2);
                     color: white;
-                    transform: scale(1.1);
+                    transform: scale(1.2);
                 }
                 
                 @keyframes slideIn {
