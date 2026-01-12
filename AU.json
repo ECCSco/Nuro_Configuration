@@ -4,6 +4,7 @@ const fs = require('fs');
 
 let win;
 let tray;
+let splashWindow;
 let config = {};
 let notificationWindows = [];
 
@@ -20,7 +21,7 @@ function loadConfig() {
     } catch (error) {
         console.error('Error loading config:', error);
     }
-    return { width: 400, side: 'right', alwaysOnTop: true, isFreeWindow: false };
+    return { width: 400, side: 'right', alwaysOnTop: true, isFreeWindow: false, showSplash: true };
 }
 
 function saveConfig(newConfig) {
@@ -266,6 +267,239 @@ function showSystemNotification(title, message) {
             notificationWindows.splice(index, 1);
             updateNotificationPositions();
         }
+    });
+}
+
+function createSplashWindow() {
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { workArea } = primaryDisplay;
+    
+    splashWindow = new BrowserWindow({
+        width: 500,
+        height: 500,
+        x: Math.round(workArea.x + (workArea.width - 500) / 2),
+        y: Math.round(workArea.y + (workArea.height - 500) / 2),
+        frame: false,
+        transparent: true,
+        alwaysOnTop: true,
+        skipTaskbar: true,
+        resizable: false,
+        movable: false,
+        minimizable: false,
+        maximizable: false,
+        fullscreenable: false,
+        show: false,
+        focusable: true,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+        }
+    });
+    
+    const splashHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                :root {
+                    --primary-bg: #1a1a1a;
+                    --shadow-dark: rgba(0,0,0,0.4);
+                    --shadow-light: rgba(255,255,255,0.05);
+                    --accent-blue: #64b5f6;
+                    --accent-orange: #ffb74d;
+                    --text-primary: #e0e0e0;
+                    --border-radius: 25px;
+                }
+                
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                
+                body {
+                    width: 500px;
+                    height: 500px;
+                    background: transparent;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    overflow: hidden;
+                }
+                
+                .splash-container {
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    background: var(--primary-bg);
+                    border-radius: var(--border-radius);
+                    box-shadow: -12px -12px 24px var(--shadow-light), 12px 12px 24px var(--shadow-dark);
+                    position: relative;
+                    overflow: hidden;
+                }
+                
+                .splash-logo {
+                    width: 200px;
+                    height: 200px;
+                    background-image: url('${path.join(__dirname, 'NuroIcon.ico').replace(/\\/g, '/')}');
+                    background-size: contain;
+                    background-repeat: no-repeat;
+                    background-position: center;
+                    margin-bottom: 30px;
+                    position: relative;
+                    z-index: 2;
+                    animation: logoPulse 2s ease-in-out infinite;
+                }
+                
+                .splash-title {
+                    font-size: 48px;
+                    font-weight: 700;
+                    background: linear-gradient(135deg, var(--accent-blue), var(--accent-orange));
+                    -webkit-background-clip: text;
+                    background-clip: text;
+                    color: transparent;
+                    letter-spacing: 2px;
+                    position: relative;
+                    z-index: 2;
+                    animation: titleGlow 3s ease-in-out infinite;
+                }
+                
+                .splash-background {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    z-index: 1;
+                    background: linear-gradient(45deg, var(--accent-blue), var(--accent-orange), var(--accent-blue));
+                    background-size: 400% 400%;
+                    animation: gradientShift 8s ease infinite;
+                    opacity: 0.1;
+                    filter: blur(20px);
+                }
+                
+                .splash-particles {
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
+                    z-index: 1;
+                }
+                
+                .particle {
+                    position: absolute;
+                    width: 4px;
+                    height: 4px;
+                    background: var(--accent-blue);
+                    border-radius: 50%;
+                    opacity: 0.5;
+                    animation: particleFloat 4s ease-in-out infinite;
+                }
+                
+                @keyframes logoPulse {
+                    0%, 100% {
+                        transform: scale(1);
+                        filter: drop-shadow(0 0 10px rgba(100, 181, 246, 0.3));
+                    }
+                    50% {
+                        transform: scale(1.05);
+                        filter: drop-shadow(0 0 20px rgba(255, 183, 77, 0.5));
+                    }
+                }
+                
+                @keyframes titleGlow {
+                    0%, 100% {
+                        text-shadow: 0 0 10px rgba(100, 181, 246, 0.3);
+                    }
+                    50% {
+                        text-shadow: 0 0 20px rgba(255, 183, 77, 0.5);
+                    }
+                }
+                
+                @keyframes gradientShift {
+                    0% {
+                        background-position: 0% 50%;
+                    }
+                    50% {
+                        background-position: 100% 50%;
+                    }
+                    100% {
+                        background-position: 0% 50%;
+                    }
+                }
+                
+                @keyframes particleFloat {
+                    0%, 100% {
+                        transform: translateY(0) translateX(0);
+                        opacity: 0.3;
+                    }
+                    25% {
+                        transform: translateY(-20px) translateX(10px);
+                        opacity: 0.5;
+                    }
+                    50% {
+                        transform: translateY(-40px) translateX(-10px);
+                        opacity: 0.3;
+                    }
+                    75% {
+                        transform: translateY(-20px) translateX(-10px);
+                        opacity: 0.5;
+                    }
+                }
+                
+                @keyframes fadeOut {
+                    from {
+                        opacity: 1;
+                    }
+                    to {
+                        opacity: 0;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="splash-container">
+                <div class="splash-background"></div>
+                <div class="splash-particles" id="particles"></div>
+                <div class="splash-logo"></div>
+                <div class="splash-title">Nuro</div>
+            </div>
+            <script>
+                const particlesContainer = document.getElementById('particles');
+                
+                for (let i = 0; i < 50; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.top = Math.random() * 100 + '%';
+                    particle.style.animationDelay = Math.random() * 4 + 's';
+                    particle.style.backgroundColor = Math.random() > 0.5 ? '#64b5f6' : '#ffb74d';
+                    particlesContainer.appendChild(particle);
+                }
+                
+                setTimeout(() => {
+                    document.querySelector('.splash-container').style.animation = 'fadeOut 0.5s ease forwards';
+                    setTimeout(() => {
+                        window.close();
+                    }, 500);
+                }, 2500);
+            </script>
+        </body>
+        </html>
+    `;
+    
+    splashWindow.loadURL(`data:text/html;charset=UTF-8,${encodeURIComponent(splashHTML)}`);
+    
+    splashWindow.once('ready-to-show', () => {
+        splashWindow.show();
+    });
+    
+    splashWindow.on('closed', () => {
+        splashWindow = null;
+        createWindow();
     });
 }
 
@@ -599,6 +833,14 @@ function updateTrayMenu() {
             }
         },
         {
+            label: 'Показывать анимацию при запуске',
+            type: 'checkbox',
+            checked: config.showSplash !== false,
+            click: (menuItem) => {
+                saveConfig({ showSplash: menuItem.checked });
+            }
+        },
+        {
             label: 'Поверх окон',
             type: 'checkbox',
             checked: config.alwaysOnTop !== undefined ? config.alwaysOnTop : true,
@@ -681,7 +923,12 @@ app.whenReady().then(async () => {
         setAutoLaunch(true);
     }
     
-    await createWindow();
+    if (config.showSplash !== false) {
+        createSplashWindow();
+    } else {
+        await createWindow();
+    }
+    
     createTray();
     
     if (config.autoUpdateOnStart) {
