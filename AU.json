@@ -87,18 +87,40 @@ function showConnectionError() {
     app.quit();
 }
 
+function updateNotificationPositions() {
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { workArea } = primaryDisplay;
+    const notificationHeight = 80;
+    const padding = 10;
+    
+    notificationWindows.forEach((notificationWindow, index) => {
+        if (notificationWindow && !notificationWindow.isDestroyed()) {
+            const y = workArea.y + workArea.height - notificationHeight - padding - (index * (notificationHeight + padding));
+            notificationWindow.setBounds({
+                x: workArea.x + workArea.width - 320 - 10,
+                y: Math.round(y),
+                width: 320,
+                height: notificationHeight
+            }, false);
+        }
+    });
+}
+
 function showSystemNotification(title, message) {
     const primaryDisplay = screen.getPrimaryDisplay();
     const { workArea } = primaryDisplay;
     
     const notificationWidth = 320;
     const notificationHeight = 80;
+    const padding = 10;
+    
+    const yPosition = workArea.y + workArea.height - notificationHeight - padding - (notificationWindows.length * (notificationHeight + padding));
     
     let notificationWindow = new BrowserWindow({
         width: notificationWidth,
         height: notificationHeight,
         x: workArea.x + workArea.width - notificationWidth - 10,
-        y: workArea.y + workArea.height - notificationHeight - 10 - (notificationWindows.length * (notificationHeight + 5)),
+        y: Math.round(yPosition),
         frame: false,
         transparent: true,
         alwaysOnTop: true,
@@ -242,6 +264,7 @@ function showSystemNotification(title, message) {
         const index = notificationWindows.indexOf(notificationWindow);
         if (index > -1) {
             notificationWindows.splice(index, 1);
+            updateNotificationPositions();
         }
     });
 }
