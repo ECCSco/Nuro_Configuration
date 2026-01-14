@@ -1,0 +1,1483 @@
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local cam = workspace.CurrentCamera
+local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Screen = Instance.new("Frame")
+local Bar1 = Instance.new("Frame")
+local Bar2 = Instance.new("Frame")
+local Task1_Button = Instance.new("TextButton")
+local Task2_Button = Instance.new("TextButton")
+local Task3_Button = Instance.new("TextButton")
+local Task4_Button = Instance.new("TextButton")
+local Task5_Button = Instance.new("TextButton")
+local Task6_Button = Instance.new("TextButton")
+local Task7_Button = Instance.new("TextButton")
+local Task8_Button = Instance.new("TextButton")
+local Task9_Button = Instance.new("TextButton")
+local Clock = Instance.new("TextLabel")
+local CS = Instance.new("TextLabel")
+local ClickUI = Instance.new("Sound")
+local Bar3 = Instance.new("Frame")
+local Tasks = Instance.new("TextLabel")
+local LightControl = Instance.new("TextButton")
+local RadioControl = Instance.new("TextButton")
+local FanControl = Instance.new("TextButton")
+local FanSound = Instance.new("Sound")
+local reverb = Instance.new("ReverbSoundEffect")
+local Music = Instance.new("Sound")
+local SG = Instance.new("ScreenGui")
+local F = Instance.new("ImageButton")
+local Buzzing = Instance.new("Sound")
+local ChairSound = Instance.new("Sound")
+local Radio = Instance.new("Sound")
+local TestAnimationWin = Instance.new("TextButton")
+local TestAnimationLose = Instance.new("TextButton")
+local FanActive = true
+local Light1OriginalColor = Color3.fromRGB(202, 203, 209)
+local light2OriginalColor = Color3.fromRGB(248, 217, 109)
+local Lighting = game:GetService("Lighting")
+local StarterGui = game:GetService("StarterGui")
+local Bloom = Instance.new("BloomEffect")
+local Blur = Instance.new("BlurEffect")
+local ColorCor = Instance.new("ColorCorrectionEffect")
+local SunRays = Instance.new("SunRaysEffect")
+local Sky = Instance.new("Sky")
+local Atm = Instance.new("Atmosphere")
+local MonsterScream = Instance.new("Sound")
+local WinSound = Instance.new("Sound")
+local LoseSound = Instance.new("Sound")
+local StreetSound = Instance.new("Sound")
+local TeleportService = game:GetService("TeleportService")
+local PrinterSound = Instance.new("Sound")
+
+
+
+
+
+for i, v in pairs(Lighting:GetChildren()) do
+	if v then
+		v:Destroy()
+	end
+end
+
+Bloom.Parent = Lighting
+Blur.Parent = Lighting
+ColorCor.Parent = Lighting
+SunRays.Parent = Lighting
+Sky.Parent = Lighting
+Atm.Parent = Lighting
+
+Bloom.Intensity = 0.3
+Bloom.Size = 10
+Bloom.Threshold = 0.8
+
+Blur.Size = 5
+
+ColorCor.Brightness = 0.1
+ColorCor.Contrast = 0.5
+ColorCor.Saturation = -0.3
+ColorCor.TintColor = Color3.fromRGB(255, 235, 203)
+
+SunRays.Intensity = 0.075
+SunRays.Spread = 0.727
+
+Sky.SkyboxBk = "http://www.roblox.com/asset/?id=151165214"
+Sky.SkyboxDn = "http://www.roblox.com/asset/?id=151165197"
+Sky.SkyboxFt = "http://www.roblox.com/asset/?id=151165224"
+Sky.SkyboxLf = "http://www.roblox.com/asset/?id=151165191"
+Sky.SkyboxRt = "http://www.roblox.com/asset/?id=151165206"
+Sky.SkyboxUp = "http://www.roblox.com/asset/?id=151165227"
+Sky.SunAngularSize = 10
+
+Lighting.Ambient = Color3.fromRGB(2,2,2)
+Lighting.Brightness = 2.25
+Lighting.ColorShift_Bottom = Color3.fromRGB(0,0,0)
+Lighting.ColorShift_Top = Color3.fromRGB(0,0,0)
+Lighting.EnvironmentDiffuseScale = 0.2
+Lighting.EnvironmentSpecularScale = 0.2
+Lighting.GlobalShadows = true
+Lighting.OutdoorAmbient = Color3.fromRGB(0,0,0)
+Lighting.ShadowSoftness = 0.2
+Lighting.ClockTime = 35
+Lighting.GeographicLatitude = 25
+Lighting.ExposureCompensation = 0.5
+
+Atm.Density = 0
+Atm.Offset = 0.556
+Atm.Color = Color3.fromRGB(0, 0, 0)
+Atm.Decay = Color3.fromRGB(0, 0, 0)
+Atm.Glare = 0
+Atm.Haze = 1.72
+
+local pointLight_3 = Instance.new("PointLight")
+pointLight_3.Parent = workspace:WaitForChild("Bulb")
+pointLight_3.Brightness = 0.2
+pointLight_3.Color = Color3.fromRGB(255, 255, 255)
+pointLight_3.Range = 12
+pointLight_3.Enabled = true
+pointLight_3.Shadows = false
+
+local pointLight_2 = Instance.new("PointLight")
+pointLight_2.Parent = workspace:WaitForChild("Light_3")
+pointLight_2.Brightness = 1
+pointLight_2.Color = Color3.fromRGB(233, 209, 171)
+pointLight_2.Range = 11.362
+pointLight_2.Enabled = true
+
+local lightPart = workspace:WaitForChild("Light")
+local pointLight = Instance.new("PointLight")
+pointLight.Parent = lightPart
+pointLight.Brightness = 1
+pointLight.Color = Color3.fromRGB(233, 209, 171)
+pointLight.Range = 11.362
+pointLight.Enabled = true
+
+local lightPart2 = workspace:WaitForChild("Light_2")
+
+local function flickerLight()
+	local flickerCount = math.random(1, 5)
+	for i = 1, flickerCount do
+		local flickerTime = math.random(0.8, 1)
+		pointLight.Enabled = false
+		lightPart2.Color = Color3.fromRGB(0, 0, 0)
+		task.wait(flickerTime)
+		pointLight.Enabled = true
+		lightPart2.Color = light2OriginalColor
+		task.wait(math.random(0.2, 2))
+	end
+end
+
+coroutine.wrap(function()
+	while true do
+		task.wait(math.random(1, 2))
+		flickerLight()
+	end
+end)()
+
+spawn(function()
+	while wait() do
+		if FanActive == true then
+			workspace:WaitForChild("Fan_Blades").CFrame = workspace:WaitForChild("Fan_Blades").CFrame * CFrame.fromEulerAnglesXYZ(0, 0.8, 0)
+		end
+	end
+end)
+
+PrinterSound.Name = "PrinterSound"
+PrinterSound.SoundId = "rbxassetid://9112759731"
+PrinterSound.Volume = 1
+PrinterSound.Parent = workspace.Printer
+PrinterSound.Playing = true
+PrinterSound:Play()
+
+StreetSound.Name = "StreetSound"
+StreetSound.SoundId = "rbxassetid://9112759731"
+StreetSound.Volume = 1
+StreetSound.Parent = game.Workspace
+StreetSound.Playing = true
+StreetSound.Looped = true
+StreetSound:Stop()
+
+MonsterScream.Name = "MonsterScream"
+MonsterScream.SoundId = "rbxassetid://131421747503220"
+MonsterScream.Volume = 1
+MonsterScream.Parent = game.Workspace
+MonsterScream.Playing = true
+MonsterScream:Stop()
+
+LoseSound.Name = "LoseSound"
+LoseSound.SoundId = "rbxassetid://98341303169873"
+LoseSound.Volume = 1
+LoseSound.Parent = game.Workspace
+LoseSound.Playing = true
+LoseSound:Stop()
+
+WinSound.Name = "WinSound"
+WinSound.SoundId = "rbxassetid://108049680694353"
+WinSound.Volume = 1
+WinSound.Parent = game.Workspace
+WinSound.Playing = true
+WinSound.Looped = true
+WinSound:Stop()
+
+FanSound.Name = "FanSound"
+FanSound.SoundId = "rbxassetid://6048037597"
+FanSound.Volume = 0.25
+FanSound.Parent = workspace:WaitForChild("Fan_Blades")
+FanSound.Playing = true
+FanSound.Looped = true
+
+Screen.Name = "Screen"
+Screen.Size = UDim2.new(1, 0, 1, 0)
+Screen.AnchorPoint = Vector2.new(0.5, 0.5)
+Screen.Position = UDim2.new(0.5, 0, 0.5, 0)
+Screen.BackgroundTransparency = 1
+Screen.Parent = SG
+Screen.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Screen.BorderSizePixel = 0
+Screen.Visible = false
+
+Bar1.Name = "Bar1"
+Bar1.Size = UDim2.new(1, 0, 0.01, 0)
+Bar1.AnchorPoint = Vector2.new(0.5, 0.5)
+Bar1.Position = UDim2.new(0.5, 0, 0.1, 0)
+Bar1.Parent = Screen
+Bar1.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Bar1.BorderSizePixel = 0
+Bar1.Visible = false
+
+Bar2.Name = "Bar2"
+Bar2.Size = UDim2.new(0.008, 0, 0.9, 0)
+Bar2.AnchorPoint = Vector2.new(0.5, 1)
+Bar2.Position = UDim2.new(0.1, 0, 1, 0)
+Bar2.Parent = Screen
+Bar2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Bar2.BorderSizePixel = 0
+Bar2.Visible = false
+
+Bar3.Name = "Bar3"
+Bar3.Size = UDim2.new(0.008, 0, 0.9, 0)
+Bar3.AnchorPoint = Vector2.new(0.5, 1)
+Bar3.Position = UDim2.new(0.8, 0, 1, 0)
+Bar3.Parent = Screen
+Bar3.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Bar3.BorderSizePixel = 0
+Bar3.Visible = false
+
+Task1_Button.Name = "Task1_Button"
+Task1_Button.Size = UDim2.new(0.082, 0, 0.1, 0)
+Task1_Button.AnchorPoint = Vector2.new(0, 0.5)
+Task1_Button.Position = UDim2.new(0, 0, 0.16, 0)
+Task1_Button.Parent = Screen
+Task1_Button.BackgroundTransparency = 1
+Task1_Button.Visible = false
+Task1_Button.Text = ">>Task 1"
+Task1_Button.Font = Enum.Font.Arcade
+Task1_Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+Task1_Button.TextSize = 25
+Task1_Button.TextXAlignment = Enum.TextXAlignment.Right
+
+Task2_Button.Name = "Task2_Button"
+Task2_Button.Size = UDim2.new(0.082, 0, 0.1, 0)
+Task2_Button.AnchorPoint = Vector2.new(0, 0.5)
+Task2_Button.Position = UDim2.new(0, 0, 0.26, 0)
+Task2_Button.Parent = Screen
+Task2_Button.BackgroundTransparency = 1
+Task2_Button.Visible = false
+Task2_Button.Text = "Task 2"
+Task2_Button.Font = Enum.Font.Arcade
+Task2_Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+Task2_Button.TextSize = 25
+Task2_Button.TextXAlignment = Enum.TextXAlignment.Right
+
+Task3_Button.Name = "Task3_Button"
+Task3_Button.Size = UDim2.new(0.082, 0, 0.1, 0)
+Task3_Button.AnchorPoint = Vector2.new(0, 0.5)
+Task3_Button.Position = UDim2.new(0, 0, 0.36, 0)
+Task3_Button.Parent = Screen
+Task3_Button.BackgroundTransparency = 1
+Task3_Button.Visible = false
+Task3_Button.Text = "Task 3"
+Task3_Button.Font = Enum.Font.Arcade
+Task3_Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+Task3_Button.TextSize = 25
+Task3_Button.TextXAlignment = Enum.TextXAlignment.Right
+
+Task4_Button.Name = "Task4_Button"
+Task4_Button.Size = UDim2.new(0.082, 0, 0.1, 0)
+Task4_Button.AnchorPoint = Vector2.new(0, 0.5)
+Task4_Button.Position = UDim2.new(0, 0, 0.46, 0)
+Task4_Button.Parent = Screen
+Task4_Button.BackgroundTransparency = 1
+Task4_Button.Visible = false
+Task4_Button.Text = "Task 4"
+Task4_Button.Font = Enum.Font.Arcade
+Task4_Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+Task4_Button.TextSize = 25
+Task4_Button.TextXAlignment = Enum.TextXAlignment.Right
+
+Task5_Button.Name = "Task5_Button"
+Task5_Button.Size = UDim2.new(0.082, 0, 0.1, 0)
+Task5_Button.AnchorPoint = Vector2.new(0, 0.5)
+Task5_Button.Position = UDim2.new(0, 0, 0.56, 0)
+Task5_Button.Parent = Screen
+Task5_Button.BackgroundTransparency = 1
+Task5_Button.Visible = false
+Task5_Button.Text = "Task 5"
+Task5_Button.Font = Enum.Font.Arcade
+Task5_Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+Task5_Button.TextSize = 25
+Task5_Button.TextXAlignment = Enum.TextXAlignment.Right
+
+Task6_Button.Name = "Task6_Button"
+Task6_Button.Size = UDim2.new(0.082, 0, 0.1, 0)
+Task6_Button.AnchorPoint = Vector2.new(0, 0.5)
+Task6_Button.Position = UDim2.new(0, 0, 0.66, 0)
+Task6_Button.Parent = Screen
+Task6_Button.BackgroundTransparency = 1
+Task6_Button.Visible = false
+Task6_Button.Text = "Task 6"
+Task6_Button.Font = Enum.Font.Arcade
+Task6_Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+Task6_Button.TextSize = 25
+Task6_Button.TextXAlignment = Enum.TextXAlignment.Right
+
+Task7_Button.Name = "Task7_Button"
+Task7_Button.Size = UDim2.new(0.082, 0, 0.1, 0)
+Task7_Button.AnchorPoint = Vector2.new(0, 0.5)
+Task7_Button.Position = UDim2.new(0, 0, 0.76, 0)
+Task7_Button.Parent = Screen
+Task7_Button.BackgroundTransparency = 1
+Task7_Button.Visible = false
+Task7_Button.Text = "Task 7"
+Task7_Button.Font = Enum.Font.Arcade
+Task7_Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+Task7_Button.TextSize = 25
+Task7_Button.TextXAlignment = Enum.TextXAlignment.Right
+
+Task8_Button.Name = "Task8_Button"
+Task8_Button.Size = UDim2.new(0.082, 0, 0.1, 0)
+Task8_Button.AnchorPoint = Vector2.new(0, 0.5)
+Task8_Button.Position = UDim2.new(0, 0, 0.86, 0)
+Task8_Button.Parent = Screen
+Task8_Button.BackgroundTransparency = 1
+Task8_Button.Visible = false
+Task8_Button.Text = "Task 8"
+Task8_Button.Font = Enum.Font.Arcade
+Task8_Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+Task8_Button.TextSize = 25
+Task8_Button.TextXAlignment = Enum.TextXAlignment.Right
+
+Task9_Button.Name = "Task9_Button"
+Task9_Button.Size = UDim2.new(0.082, 0, 0.1, 0)
+Task9_Button.AnchorPoint = Vector2.new(0, 0.5)
+Task9_Button.Position = UDim2.new(0, 0, 0.96, 0)
+Task9_Button.Parent = Screen
+Task9_Button.BackgroundTransparency = 1
+Task9_Button.Visible = false
+Task9_Button.Text = "Task 9"
+Task9_Button.Font = Enum.Font.Arcade
+Task9_Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+Task9_Button.TextSize = 25
+Task9_Button.TextXAlignment = Enum.TextXAlignment.Right
+
+Clock.Name = "Clock"
+Clock.Size = UDim2.new(0.1, 0, 0.1, 0)
+Clock.AnchorPoint = Vector2.new(0.5, 0)
+Clock.Position = UDim2.new(0.45, 0, 0, 0)
+Clock.Parent = Screen
+Clock.BackgroundTransparency = 1
+Clock.Visible = false
+Clock.Text = os.date("%H:%M")
+Clock.Font = Enum.Font.Arcade
+Clock.TextColor3 = Color3.fromRGB(255, 255, 255)
+Clock.TextSize = 30
+Clock.TextYAlignment = Enum.TextYAlignment.Bottom
+
+CS.Name = "CS"
+CS.Size = UDim2.new(0.1, 0, 0.1, 0)
+CS.AnchorPoint = Vector2.new(1, 0)
+CS.Position = UDim2.new(0.95, 0, 0, 0)
+CS.Parent = Screen
+CS.BackgroundTransparency = 1
+CS.Visible = false
+CS.Text = "Controls"
+CS.Font = Enum.Font.Arcade
+CS.TextColor3 = Color3.fromRGB(255, 255, 255)
+CS.TextSize = 30
+CS.TextYAlignment = Enum.TextYAlignment.Bottom
+
+LightControl.Name = "LightControl"
+LightControl.Size = UDim2.new(0.18, 0, 0.1, 0)
+LightControl.AnchorPoint = Vector2.new(1, 0.5)
+LightControl.Position = UDim2.new(1, 0, 0.16, 0)
+LightControl.Parent = Screen
+LightControl.BackgroundTransparency = 1
+LightControl.Visible = false
+LightControl.Text = "Light: true"
+LightControl.Font = Enum.Font.Arcade
+LightControl.TextColor3 = Color3.fromRGB(255, 255, 255)
+LightControl.TextSize = 25
+LightControl.TextXAlignment = Enum.TextXAlignment.Left
+
+RadioControl.Name = "RadioControl"
+RadioControl.Size = UDim2.new(0.18, 0, 0.1, 0)
+RadioControl.AnchorPoint = Vector2.new(1, 0.5)
+RadioControl.Position = UDim2.new(1, 0, 0.26, 0)
+RadioControl.Parent = Screen
+RadioControl.BackgroundTransparency = 1
+RadioControl.Visible = false
+RadioControl.Text = "Radio: true"
+RadioControl.Font = Enum.Font.Arcade
+RadioControl.TextColor3 = Color3.fromRGB(255, 255, 255)
+RadioControl.TextSize = 25
+RadioControl.TextXAlignment = Enum.TextXAlignment.Left
+
+FanControl.Name = "FanControl"
+FanControl.Size = UDim2.new(0.18, 0, 0.1, 0)
+FanControl.AnchorPoint = Vector2.new(1, 0.5)
+FanControl.Position = UDim2.new(1, 0, 0.36, 0)
+FanControl.Parent = Screen
+FanControl.BackgroundTransparency = 1
+FanControl.Visible = false
+FanControl.Text = "Fan: true"
+FanControl.Font = Enum.Font.Arcade
+FanControl.TextColor3 = Color3.fromRGB(255, 255, 255)
+FanControl.TextSize = 25
+FanControl.TextXAlignment = Enum.TextXAlignment.Left
+
+TestAnimationWin.Name = "TestAnimationWin"
+TestAnimationWin.Size = UDim2.new(0.18, 0, 0.1, 0)
+TestAnimationWin.AnchorPoint = Vector2.new(0.5, 0.5)
+TestAnimationWin.Position = UDim2.new(0.5, 0, 0.26, 0)
+TestAnimationWin.Parent = Screen
+TestAnimationWin.BackgroundTransparency = 1
+TestAnimationWin.Visible = false
+TestAnimationWin.Text = "Win Test Animation"
+TestAnimationWin.Font = Enum.Font.Arcade
+TestAnimationWin.TextColor3 = Color3.fromRGB(255, 255, 255)
+TestAnimationWin.TextSize = 25
+
+TestAnimationLose.Name = "TestAnimationLose"
+TestAnimationLose.Size = UDim2.new(0.18, 0, 0.1, 0)
+TestAnimationLose.AnchorPoint = Vector2.new(0.5, 0.5)
+TestAnimationLose.Position = UDim2.new(0.5, 0, 0.36, 0)
+TestAnimationLose.Parent = Screen
+TestAnimationLose.BackgroundTransparency = 1
+TestAnimationLose.Visible = false
+TestAnimationLose.Text = "Lose Test Animation"
+TestAnimationLose.Font = Enum.Font.Arcade
+TestAnimationLose.TextColor3 = Color3.fromRGB(255, 255, 255)
+TestAnimationLose.TextSize = 25
+
+Tasks.Name = "Tasks"
+Tasks.Size = UDim2.new(0.1, 0, 0.1, 0)
+Tasks.AnchorPoint = Vector2.new(0, 0)
+Tasks.Position = UDim2.new(0, 0, 0, 0)
+Tasks.Parent = Screen
+Tasks.BackgroundTransparency = 1
+Tasks.Visible = false
+Tasks.Text = "Tasks"
+Tasks.Font = Enum.Font.Arcade
+Tasks.TextYAlignment = Enum.TextYAlignment.Bottom
+Tasks.TextColor3 = Color3.fromRGB(255, 255, 255)
+Tasks.TextSize = 30
+
+ClickUI.Name = "ClickUI"
+ClickUI.SoundId = "rbxassetid://12221976"
+ClickUI.Volume = 0.7
+ClickUI.Parent = workspace
+ClickUI.Playing = true
+ClickUI:Stop()
+
+Task1_Button.MouseButton1Click:Connect(function()
+	if Task1_Button.Text ~= ">>Task 1" then
+		ClickUI:Play()
+		Task1_Button.Text = ">>Task 1"
+		Task2_Button.Text = "Task 2"
+		Task3_Button.Text = "Task 3"
+		Task4_Button.Text = "Task 4"
+		Task5_Button.Text = "Task 5"
+		Task6_Button.Text = "Task 6"
+		Task7_Button.Text = "Task 7"
+		Task8_Button.Text = "Task 8"
+		Task9_Button.Text = "Task 9"
+	end
+end)
+
+Task2_Button.MouseButton1Click:Connect(function()
+	if Task2_Button.Text ~= ">>Task 2" then
+		ClickUI:Play()
+		Task1_Button.Text = "Task 1"
+		Task2_Button.Text = ">>Task 2"
+		Task3_Button.Text = "Task 3"
+		Task4_Button.Text = "Task 4"
+		Task5_Button.Text = "Task 5"
+		Task6_Button.Text = "Task 6"
+		Task7_Button.Text = "Task 7"
+		Task8_Button.Text = "Task 8"
+		Task9_Button.Text = "Task 9"
+	end
+end)
+
+Task3_Button.MouseButton1Click:Connect(function()
+	if Task3_Button.Text ~= ">>Task 3" then
+		ClickUI:Play()
+		Task1_Button.Text = "Task 1"
+		Task2_Button.Text = "Task 2"
+		Task3_Button.Text = ">>Task 3"
+		Task4_Button.Text = "Task 4"
+		Task5_Button.Text = "Task 5"
+		Task6_Button.Text = "Task 6"
+		Task7_Button.Text = "Task 7"
+		Task8_Button.Text = "Task 8"
+		Task9_Button.Text = "Task 9"
+	end
+end)
+
+Task4_Button.MouseButton1Click:Connect(function()
+	if Task4_Button.Text ~= ">>Task 4" then
+		ClickUI:Play()
+		Task1_Button.Text = "Task 1"
+		Task2_Button.Text = "Task 2"
+		Task3_Button.Text = "Task 3"
+		Task4_Button.Text = ">>Task 4"
+		Task5_Button.Text = "Task 5"
+		Task6_Button.Text = "Task 6"
+		Task7_Button.Text = "Task 7"
+		Task8_Button.Text = "Task 8"
+		Task9_Button.Text = "Task 9"
+	end
+end)
+
+Task5_Button.MouseButton1Click:Connect(function()
+	if Task5_Button.Text ~= ">>Task 5" then
+		ClickUI:Play()
+		Task1_Button.Text = "Task 1"
+		Task2_Button.Text = "Task 2"
+		Task3_Button.Text = "Task 3"
+		Task4_Button.Text = "Task 4"
+		Task5_Button.Text = ">>Task 5"
+		Task6_Button.Text = "Task 6"
+		Task7_Button.Text = "Task 7"
+		Task8_Button.Text = "Task 8"
+		Task9_Button.Text = "Task 9"
+	end
+end)
+
+Task6_Button.MouseButton1Click:Connect(function()
+	if Task6_Button.Text ~= ">>Task 6" then
+		ClickUI:Play()
+		Task1_Button.Text = "Task 1"
+		Task2_Button.Text = "Task 2"
+		Task3_Button.Text = "Task 3"
+		Task4_Button.Text = "Task 4"
+		Task5_Button.Text = "Task 5"
+		Task6_Button.Text = ">>Task 6"
+		Task7_Button.Text = "Task 7"
+		Task8_Button.Text = "Task 8"
+		Task9_Button.Text = "Task 9"
+	end
+end)
+
+Task7_Button.MouseButton1Click:Connect(function()
+	if Task7_Button.Text ~= ">>Task 7" then
+		ClickUI:Play()
+		Task1_Button.Text = "Task 1"
+		Task2_Button.Text = "Task 2"
+		Task3_Button.Text = "Task 3"
+		Task4_Button.Text = "Task 4"
+		Task5_Button.Text = "Task 5"
+		Task6_Button.Text = "Task 6"
+		Task7_Button.Text = ">>Task 7"
+		Task8_Button.Text = "Task 8"
+		Task9_Button.Text = "Task 9"
+	end
+end)
+
+Task8_Button.MouseButton1Click:Connect(function()
+	if Task8_Button.Text ~= ">>Task 8" then
+		ClickUI:Play()
+		Task1_Button.Text = "Task 1"
+		Task2_Button.Text = "Task 2"
+		Task3_Button.Text = "Task 3"
+		Task4_Button.Text = "Task 4"
+		Task5_Button.Text = "Task 5"
+		Task6_Button.Text = "Task 6"
+		Task7_Button.Text = "Task 7"
+		Task8_Button.Text = ">>Task 8"
+		Task9_Button.Text = "Task 9"
+	end
+end)
+
+Task9_Button.MouseButton1Click:Connect(function()
+	if Task9_Button.Text ~= ">>Task 9" then
+		ClickUI:Play()
+		Task1_Button.Text = "Task 1"
+		Task2_Button.Text = "Task 2"
+		Task3_Button.Text = "Task 3"
+		Task4_Button.Text = "Task 4"
+		Task5_Button.Text = "Task 5"
+		Task6_Button.Text = "Task 6"
+		Task7_Button.Text = "Task 7"
+		Task8_Button.Text = "Task 8"
+		Task9_Button.Text = ">>Task 9"
+	end
+end)
+
+LightControl.MouseButton1Click:Connect(function()
+	ClickUI:Play()
+	if LightControl.Text == "Light: true" then
+		LightControl.Text = "Light: false"
+		pointLight_3.Enabled = false
+		pointLight_2.Enabled = false
+		workspace:WaitForChild("Bulb").Color = Color3.fromRGB(0, 0, 0)
+		workspace:WaitForChild("Light_4").Color = Color3.fromRGB(0, 0, 0)
+	else
+		LightControl.Text = "Light: true"
+		pointLight_3.Enabled = true
+		pointLight_2.Enabled = true
+		workspace:WaitForChild("Bulb").Color = Light1OriginalColor
+		workspace:WaitForChild("Light_4").Color = light2OriginalColor
+	end
+end)
+
+RadioControl.MouseButton1Click:Connect(function()
+	ClickUI:Play()
+	if RadioControl.Text == "Radio: true" then
+		RadioControl.Text = "Radio: false"
+	else
+		RadioControl.Text = "Radio: true"
+	end
+end)
+
+FanControl.MouseButton1Click:Connect(function()
+	ClickUI:Play()
+
+	if FanControl.Text == "Fan: true" then
+		FanControl.Text = "Fan: false"
+		FanActive = false
+		FanSound:Stop()
+	else
+		FanControl.Text = "Fan: true"
+		FanActive = true
+		FanSound:Play()
+	end
+end)
+
+task.spawn(function()
+	while wait() do
+		Clock.Text = os.date("%H:%M")
+		if Screen.BackgroundTransparency == 1 then
+			Screen.Visible = false
+		else
+			Screen.Visible = true
+		end
+
+	end
+end)
+
+
+ChairSound.Name = "ChairSound_1"
+ChairSound.SoundId = "rbxassetid://9116254990"
+ChairSound.Volume = 0.7
+ChairSound.Parent = workspace
+ChairSound.Playing = true
+ChairSound:Stop()
+
+local FootStepsSound = Instance.new("Sound")
+FootStepsSound.Name = "FootSteps_1"
+FootStepsSound.SoundId = "rbxassetid://133705377"
+FootStepsSound.Volume = 0.5
+FootStepsSound.Looped = true
+FootStepsSound.Parent = workspace
+FootStepsSound.Playing = true
+FootStepsSound:Stop()
+
+local Door_Open = Instance.new("Sound")
+Door_Open.Name = "FootSteps_1"
+Door_Open.SoundId = "rbxassetid://157167203"
+Door_Open.Volume = 0.5
+Door_Open.Looped = false
+Door_Open.Parent = workspace
+Door_Open.Playing = true
+Door_Open:Stop()
+
+local Door_Close = Instance.new("Sound")
+Door_Close.Name = "FootSteps_1"
+Door_Close.SoundId = "rbxassetid://157167205"
+Door_Close.Volume = 0.5
+Door_Close.Looped = false
+Door_Close.Parent = workspace
+Door_Close.Playing = true
+Door_Close:Stop()
+
+Buzzing.Parent = lightPart
+Buzzing.Name = "Buzzing"
+Buzzing.SoundId = "rbxassetid://124692745118325"
+Buzzing.Volume = 1
+Buzzing.Playing = true
+Buzzing.Looped = true
+Buzzing.RollOffMode = Enum.RollOffMode.Linear
+Buzzing.RollOffMinDistance = 5
+Buzzing.RollOffMaxDistance = 27
+
+cam.CameraType = Enum.CameraType.Scriptable
+cam.CameraSubject = nil
+
+Music.Parent = game.Workspace
+Music.Name = "Music"
+Music.SoundId = "rbxassetid://79705741285394"
+Music.Volume = 0.7
+Music.Playing = true
+Music.Looped = true
+
+local cameraPart = Instance.new("Part")
+cameraPart.Name = "CameraController"
+cameraPart.CFrame = CFrame.new(-15.947, 4.89, 14.232) * CFrame.Angles(math.rad(-0.008), math.rad(-114.46), math.rad(0.003))
+cameraPart.Anchored = true
+cameraPart.CanCollide = false
+cameraPart.Transparency = 1
+cameraPart.Parent = workspace
+
+local offset = Vector2.new(0,0)
+
+UIS.InputChanged:Connect(function(input, processed)
+	if processed then return end
+	if input.UserInputType == Enum.UserInputType.MouseMovement then
+		offset = Vector2.new(input.Delta.X, input.Delta.Y)
+	elseif input.UserInputType == Enum.UserInputType.Touch then
+		offset = Vector2.new(input.Delta.X, input.Delta.Y)
+	end
+end)
+
+local pl = game.Players.LocalPlayer
+local char = pl.Character or pl.CharacterAdded:Wait()
+local hrp = char:WaitForChild("HumanoidRootPart")
+hrp.CFrame = CFrame.new(-10.522, 16.075, 8.996)
+char.Humanoid.WalkSpeed = 0
+char.Humanoid.JumpPower = 0
+
+SG.Parent = pl.PlayerGui
+SG.IgnoreGuiInset = true
+SG.ResetOnSpawn = false
+
+Radio.Parent = game.Workspace:WaitForChild("Radio")
+Radio.SoundId = "rbxassetid://1838952646"
+Radio.Looped = true
+Radio.Volume = 0.7
+Radio.RollOffMode = Enum.RollOffMode.Linear
+Radio.RollOffMinDistance = 10
+Radio.RollOffMaxDistance = 100
+
+reverb.Enabled = true
+reverb.DecayTime = 1.5
+reverb.Density = 0.8
+reverb.Diffusion = 0.7
+reverb.DryLevel = 2
+reverb.WetLevel = 1
+reverb.Parent = Radio
+
+Radio:Stop()
+
+local targetPart = Instance.new("Part")
+targetPart.Name = "MonitorScreen"
+targetPart.Position = Vector3.new(-11.092, 4.926, 15.901)
+targetPart.Size = Vector3.new(1, 1, 1)
+targetPart.Anchored = true
+targetPart.CanCollide = false
+targetPart.Transparency = 1
+targetPart.Orientation = Vector3.new(0, 110, 0)
+targetPart.Parent = workspace
+
+local billboardGui = Instance.new("BillboardGui")
+billboardGui.Name = "MonitorBillboard"
+billboardGui.AlwaysOnTop = true
+billboardGui.Size = UDim2.new(0.5, 0, 0.5, 0)
+billboardGui.StudsOffset = Vector3.new(0, 0, 0)
+billboardGui.Adornee = targetPart
+billboardGui.Parent = targetPart
+
+local imageLabel = Instance.new("ImageLabel")
+imageLabel.Name = "Icon"
+imageLabel.Size = UDim2.new(1, 0, 1, 0)
+imageLabel.BackgroundTransparency = 1
+imageLabel.Image = "rbxassetid://91756436947811"
+imageLabel.ImageColor3 = Color3.fromRGB(255, 255, 255)
+imageLabel.Parent = billboardGui
+
+local clickDetector = Instance.new("ClickDetector")
+clickDetector.Parent = targetPart
+
+local DoorButton = Instance.new("ImageButton")
+DoorButton.Name = "DoorButton"
+DoorButton.Size = UDim2.new(0.1, 0, 0.1, 0)
+DoorButton.AnchorPoint = Vector2.new(0, 0.5)
+DoorButton.Position = UDim2.new(0, 0, 0.5, 0)
+DoorButton.BackgroundTransparency = 1
+DoorButton.Image = "rbxassetid://110565374488427"
+DoorButton.Parent = SG
+
+local Constraint = Instance.new("UIAspectRatioConstraint")
+Constraint.Parent = DoorButton
+Constraint.AspectRatio = 1
+Constraint.DominantAxis = Enum.DominantAxis.Width
+
+local TableButton = Instance.new("ImageButton")
+TableButton.Name = "TableButton"
+TableButton.Size = UDim2.new(0.1, 0, 0.1, 0)
+TableButton.AnchorPoint = Vector2.new(0, 1)
+TableButton.Position = UDim2.new(0, 0, 1, 0)
+TableButton.BackgroundTransparency = 1
+TableButton.Image = "rbxassetid://133648495912900"
+TableButton.Parent = SG
+
+local Constraint2 = Instance.new("UIAspectRatioConstraint")
+Constraint2.Parent = TableButton
+Constraint2.AspectRatio = 1
+Constraint2.DominantAxis = Enum.DominantAxis.Width
+
+local function applyOrientation(targetOrientation, duration)
+	local startCFrame = cameraPart.CFrame
+	local startX, startY, startZ = startCFrame:ToOrientation()
+	local targetX, targetY, targetZ = math.rad(targetOrientation.X), math.rad(targetOrientation.Y), math.rad(targetOrientation.Z)
+
+	local tweenInfo = TweenInfo.new(duration or 1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local tween = TweenService:Create(cameraPart, tweenInfo, {
+		CFrame = CFrame.new(cameraPart.Position) * CFrame.fromOrientation(targetX, targetY, targetZ)
+	})
+	tween:Play()
+	return tween
+end
+
+local buttonPressed = false
+clickDetector.MouseClick:Connect(function()
+	if not buttonPressed then
+		TweenService:Create(Screen, TweenInfo.new(1), {BackgroundTransparency = 0}):Play()
+		DoorButton.Visible = false
+		TableButton.Visible = false
+		buttonPressed = true
+		targetPart.Position = Vector3.new(-11.092, 9999, 15.901)
+		local targetCFrame = CFrame.new(-12.162, 4.89, 15.306) * cameraPart.CFrame.Rotation
+		local tween = TweenService:Create(cameraPart, TweenInfo.new(1), {CFrame = targetCFrame})
+		tween:Play()
+		tween.Completed:Wait()
+		targetPart.Position = Vector3.new(-11.092, 9999, 15.901)		
+		for _, child in ipairs(Screen:GetChildren()) do
+			if child:IsA("GuiObject") then
+				child.Visible = true
+			end
+		end
+
+		local bottomButton = Instance.new("ImageButton")
+		bottomButton.Name = "BottomButton"
+		bottomButton.Size = UDim2.new(0.1, 0, 0.1, 0)
+		bottomButton.AnchorPoint = Vector2.new(0.5, 1)
+		bottomButton.Position = UDim2.new(0.5, 0, 1, 0)
+		bottomButton.BackgroundTransparency = 1
+		bottomButton.Image = "rbxassetid://99048260512131"
+		bottomButton.Parent = SG
+
+		bottomButton.MouseButton1Click:Connect(function()
+			for _, child in ipairs(Screen:GetChildren()) do
+				if child:IsA("GuiObject") then
+					child.Visible = false
+				end
+			end
+			bottomButton:Destroy()
+			TweenService:Create(Screen, TweenInfo.new(1), {BackgroundTransparency = 1}):Play()
+			targetPart.Position = Vector3.new(-11.092, 4.926, 15.901)
+			local startCFrame = CFrame.new(-15.947, 4.89, 14.232) * cameraPart.CFrame.Rotation
+			local returnTween = TweenService:Create(cameraPart, TweenInfo.new(1), {CFrame = startCFrame})
+			returnTween:Play()
+			returnTween.Completed:Wait()
+			DoorButton.Visible = true
+			TableButton.Visible = true
+			targetPart.Position = Vector3.new(-11.092, 4.926, 15.901)
+			buttonPressed = false
+		end)
+	end
+end)
+
+local doorPart = nil
+local hingePart = nil
+local doorOpened = false
+local doorModel = nil
+
+local function createDoor()
+	if doorModel then
+		doorModel:Destroy()
+	end
+
+	local doorSize = Vector3.new(4.6, 7, 0.2)
+	local doorPosition = Vector3.new(-10.693, 3.662, -4.663)
+	local doorOrientation = Vector3.new(0, 0, -0.493)
+
+	doorModel = Instance.new("Model")
+	doorModel.Name = "CustomDoorModel"
+	doorModel.Parent = workspace
+
+	doorPart = Instance.new("Part")
+	doorPart.Name = "CustomDoor"
+	doorPart.BrickColor = BrickColor.new("Linen")
+	doorPart.CastShadow = true
+	doorPart.Material = Enum.Material.Wood
+	doorPart.Size = doorSize
+	doorPart.Position = doorPosition
+	doorPart.Orientation = doorOrientation
+	doorPart.Anchored = true
+	doorPart.CanCollide = true
+	doorPart.Parent = doorModel
+
+	doorModel.PrimaryPart = doorPart
+
+	hingePart = Instance.new("Part")
+	hingePart.Name = "DoorHinge"
+	hingePart.Size = Vector3.new(0.2, doorSize.Y, 0.2)
+	hingePart.BrickColor = BrickColor.new("Linen")
+	hingePart.Material = Enum.Material.Wood
+	hingePart.Transparency = 0
+	hingePart.Anchored = true
+	hingePart.CanCollide = false
+	hingePart.Parent = workspace
+
+	local initialCFrame = CFrame.new(doorPosition) * CFrame.Angles(math.rad(doorOrientation.X), math.rad(doorOrientation.Y), math.rad(doorOrientation.Z))
+	local hingeOffset = doorPart.CFrame:vectorToWorldSpace(Vector3.new(-doorSize.X/2, 0, 0))
+
+	hingePart.CFrame = CFrame.new(doorPosition + hingeOffset) * CFrame.Angles(math.rad(doorOrientation.X), math.rad(doorOrientation.Y), math.rad(doorOrientation.Z))
+
+	doorPart.CFrame = hingePart.CFrame * CFrame.new(doorSize.X/2, 0, 0)
+
+	doorOpened = false
+end
+
+createDoor()
+
+local function openDoor()
+	if not doorPart or not hingePart then return end
+
+	if not doorOpened then
+		local initialHingeCFrame = hingePart.CFrame
+		local targetAngle = 90
+
+		local tween = TweenService:Create(hingePart, TweenInfo.new(1), {
+			CFrame = initialHingeCFrame * CFrame.Angles(0, math.rad(targetAngle), 0)
+		})
+
+		local connection
+		connection = RunService.Heartbeat:Connect(function()
+			if doorPart and hingePart then
+				doorPart.CFrame = hingePart.CFrame * CFrame.new(doorPart.Size.X/2, 0, 0)
+			end
+		end)
+
+		tween:Play()
+		tween.Completed:Wait()
+		connection:Disconnect()
+
+		doorOpened = true
+	end
+end
+
+local function closeDoor()
+	if not doorPart or not hingePart then return end
+
+	if doorOpened then
+		local initialHingeCFrame = hingePart.CFrame
+
+		local tween = TweenService:Create(hingePart, TweenInfo.new(1), {
+			CFrame = CFrame.new(hingePart.Position) * CFrame.Angles(math.rad(0), math.rad(0), math.rad(-0.493))
+		})
+
+		local connection
+		connection = RunService.Heartbeat:Connect(function()
+			if doorPart and hingePart then
+				doorPart.CFrame = hingePart.CFrame * CFrame.new(doorPart.Size.X/2, 0, 0)
+			end
+		end)
+
+		tween:Play()
+		tween.Completed:Wait()
+		connection:Disconnect()
+
+		doorOpened = false
+	end
+end
+
+local function WinAnimation()
+	Music:Stop()
+	local bottomButton = SG:FindFirstChild("BottomButton")
+	if bottomButton then
+		bottomButton:Destroy()
+	end
+
+	for _, child in ipairs(Screen:GetChildren()) do
+		if child:IsA("GuiObject") then
+			child.Visible = false
+		end
+	end
+	TweenService:Create(Screen, TweenInfo.new(1), {BackgroundTransparency = 1}):Play()
+	targetPart.Position = Vector3.new(-11.092, 4.926, 15.901)
+	local startCFrame = CFrame.new(-15.947, 4.89, 14.232) * cameraPart.CFrame.Rotation
+	local returnTween = TweenService:Create(cameraPart, TweenInfo.new(1), {CFrame = startCFrame})
+	returnTween:Play()
+	returnTween.Completed:Wait()
+	Atm.Density = 0.7
+	Atm.Haze = 2
+	Atm.Offset = 0
+	F.Visible = true
+	TweenService:Create(F, TweenInfo.new(1), {BackgroundTransparency = 0}):Play()
+	wait(1)
+	cameraPart.CFrame = CFrame.new(425, 5.2, -281) * CFrame.Angles(math.rad(0), math.rad(180), math.rad(0))
+	wait(1.5)
+	TweenService:Create(F, TweenInfo.new(1), {BackgroundTransparency = 1}):Play()
+	StreetSound:Play()
+	wait(0.8)
+	local easingStyle = Enum.EasingStyle.Quad
+	local easingDirection = Enum.EasingDirection.InOut
+
+	local sequence1 = TweenService:Create(cameraPart, TweenInfo.new(0.8, easingStyle, easingDirection), {
+		CFrame = CFrame.new(425, 5.2, -275) * CFrame.Angles(math.rad(0), math.rad(180), math.rad(0))
+	})
+	sequence1:Play()
+	sequence1.Completed:Wait()
+
+	FootStepsSound:Play()
+
+	local sequence2 = TweenService:Create(cameraPart, TweenInfo.new(1.2, easingStyle, easingDirection), {
+		CFrame = CFrame.new(425, 5.2, -269) * CFrame.Angles(math.rad(0), math.rad(180), math.rad(0))
+	})
+	sequence2:Play()
+	sequence2.Completed:Wait()
+
+	local sequence3 = TweenService:Create(cameraPart, TweenInfo.new(0.6, easingStyle, easingDirection), {
+		CFrame = CFrame.new(425, 5.2, -267) * CFrame.Angles(math.rad(0), math.rad(180), math.rad(0))
+	})
+	sequence3:Play()
+	sequence3.Completed:Wait()
+
+	local sequence4 = TweenService:Create(cameraPart, TweenInfo.new(1.2, easingStyle, easingDirection), {
+		CFrame = CFrame.new(425, 5.2, -262) * CFrame.Angles(math.rad(0), math.rad(180), math.rad(0))
+	})
+	sequence4:Play()
+	sequence4.Completed:Wait()
+
+	local sequence5 = TweenService:Create(cameraPart, TweenInfo.new(1.0, easingStyle, easingDirection), {
+		CFrame = CFrame.new(425, 5.2, -255) * CFrame.Angles(math.rad(0), math.rad(180), math.rad(0))
+	})
+	sequence5:Play()
+	sequence5.Completed:Wait()
+
+	local sequence6 = TweenService:Create(cameraPart, TweenInfo.new(1.0, easingStyle, easingDirection), {
+		CFrame = CFrame.new(425, 5.2, -252) * CFrame.Angles(math.rad(0), math.rad(180), math.rad(0))
+	})
+	sequence6:Play()
+	sequence6.Completed:Wait()
+
+	local sequence7 = applyOrientation(Vector3.new(0, -90, 0), 1)
+	sequence7:Play()
+	sequence7.Completed:Wait()
+
+	local sequence8 = TweenService:Create(cameraPart, TweenInfo.new(1.0, easingStyle, easingDirection), {
+		CFrame = CFrame.new(429, 5.2, -252) * CFrame.Angles(math.rad(0), math.rad(-90), math.rad(0))
+	})
+	sequence8:Play()
+	sequence8.Completed:Wait()
+
+	local sequence9 = TweenService:Create(cameraPart, TweenInfo.new(1.0, easingStyle, easingDirection), {
+		CFrame = CFrame.new(433, 5.2, -252) * CFrame.Angles(math.rad(0), math.rad(-90), math.rad(0))
+	})
+	sequence9:Play()
+	sequence9.Completed:Wait()
+	FootStepsSound:Stop()
+	TweenService:Create(F, TweenInfo.new(1), {BackgroundTransparency = 0}):Play()
+	wait(1)
+	Door_Open:Play()
+	wait(0.9)
+	workspace.Monster:SetPrimaryPartCFrame(CFrame.new(425, 9, -158.2) * CFrame.Angles(0, math.rad(0), 0))
+	cameraPart.CFrame = CFrame.new(425, 8.2, -234) * CFrame.Angles(math.rad(0), math.rad(180), math.rad(0))
+	Door_Close:Play()
+	wait(1)
+	TweenService:Create(F, TweenInfo.new(1), {BackgroundTransparency = 1}):Play()
+	local sequence10 = TweenService:Create(cameraPart, TweenInfo.new(10, easingStyle, easingDirection), {
+		CFrame = CFrame.new(425, 8.737, -166) * CFrame.Angles(math.rad(0), math.rad(180), math.rad(0))
+	})
+	sequence10:Play()
+	sequence10.Completed:Wait()
+	TweenService:Create(F, TweenInfo.new(1), {BackgroundTransparency = 0}):Play()
+	wait(1)
+	WinSound:Play()
+	StreetSound:Stop()
+	local YouWin = Instance.new("TextLabel")
+	YouWin.Name = "YouWin"
+	YouWin.Size = UDim2.new(1, 0, 0.1, 0)
+	YouWin.AnchorPoint = Vector2.new(0.5, 0.5)
+	YouWin.Position = UDim2.new(0.5, 0, 0.5, 0)
+	YouWin.Parent = SG
+	YouWin.BackgroundTransparency = 1
+	YouWin.Text = "You Win"
+	YouWin.Font = Enum.Font.Arcade
+	YouWin.TextColor3 = Color3.fromRGB(0, 255, 0)
+	YouWin.TextSize = 50
+	
+	local TryAgainButton = Instance.new("TextButton")
+	TryAgainButton.Name = "TryAgainButton"
+	TryAgainButton.Size = UDim2.new(0.1, 0, 0.1, 0)
+	TryAgainButton.AnchorPoint = Vector2.new(0.5, 1)
+	TryAgainButton.Position = UDim2.new(0.5, 0, 1, 0)
+	TryAgainButton.Parent = SG
+	TryAgainButton.BackgroundTransparency = 1
+	TryAgainButton.Text = "Try Again"
+	TryAgainButton.Font = Enum.Font.Arcade
+	TryAgainButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	TryAgainButton.TextSize = 25
+	TryAgainButton.MouseButton1Click:Connect(function()
+		TeleportService:Teleport(game.PlaceId, player)
+	end)
+end
+
+TestAnimationWin.MouseButton1Click:Connect(function()
+	WinAnimation()
+end)
+
+local function LoseAnimation()
+	Music:Stop()
+	local bottomButton = SG:FindFirstChild("BottomButton")
+	if bottomButton then
+		bottomButton:Destroy()
+	end
+
+	for _, child in ipairs(Screen:GetChildren()) do
+		if child:IsA("GuiObject") then
+			child.Visible = false
+		end
+	end
+	Screen.BackgroundTransparency = 1
+	targetPart.Position = Vector3.new(-11.092, 4.926, 15.901)
+	Atm.Density = 0.7
+	Atm.Haze = 2
+	Atm.Offset = 0
+	F.Visible = true
+	MonsterScream:Play()
+	for i = 1, 80 do
+		cameraPart.CFrame = CFrame.new(-582.824, 6.759, -283.688) * CFrame.Angles(math.rad(0), math.rad(90), math.rad(0))
+		wait(0.01)
+		cameraPart.CFrame = CFrame.new(-583, 6.759, -283.688) * CFrame.Angles(math.rad(0), math.rad(90), math.rad(0))
+		wait(0.01)
+	end
+	F.BackgroundTransparency = 0
+	LoseSound:Play()
+	local YouLose = Instance.new("TextLabel")
+	YouLose.Name = "YouLose"
+	YouLose.Size = UDim2.new(1, 0, 0.1, 0)
+	YouLose.AnchorPoint = Vector2.new(0.5, 0.5)
+	YouLose.Position = UDim2.new(0.5, 0, 0.5, 0)
+	YouLose.Parent = SG
+	YouLose.BackgroundTransparency = 1
+	YouLose.Text = "You Lose"
+	YouLose.Font = Enum.Font.Arcade
+	YouLose.TextColor3 = Color3.fromRGB(255, 0, 0)
+	YouLose.TextSize = 50
+	
+	local TryAgainButton = Instance.new("TextButton")
+	TryAgainButton.Name = "TryAgainButton"
+	TryAgainButton.Size = UDim2.new(0.1, 0, 0.1, 0)
+	TryAgainButton.AnchorPoint = Vector2.new(0.5, 1)
+	TryAgainButton.Position = UDim2.new(0.5, 0, 1, 0)
+	TryAgainButton.Parent = SG
+	TryAgainButton.BackgroundTransparency = 1
+	TryAgainButton.Text = "Try Again"
+	TryAgainButton.Font = Enum.Font.Arcade
+	TryAgainButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	TryAgainButton.TextSize = 25
+	TryAgainButton.MouseButton1Click:Connect(function()
+		TeleportService:Teleport(game.PlaceId, player)
+	end)
+end
+
+TestAnimationLose.MouseButton1Click:Connect(function()
+	LoseAnimation()
+end)
+
+local function doorForwardAnimation()
+	local easingStyle = Enum.EasingStyle.Quad
+	local easingDirection = Enum.EasingDirection.InOut
+
+	ChairSound:Play()
+
+	local sequence1 = TweenService:Create(cameraPart, TweenInfo.new(0.8, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-15.947, 5.4, 14.232) * CFrame.Angles(math.rad(5), math.rad(-114.46), math.rad(0.003))
+	})
+	sequence1:Play()
+	sequence1.Completed:Wait()
+
+	FootStepsSound:Play()
+
+	local sequence2 = TweenService:Create(cameraPart, TweenInfo.new(1.2, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-15.947, 5.4, 14.232) * CFrame.Angles(math.rad(0), math.rad(0), math.rad(0))
+	})
+	sequence2:Play()
+	sequence2.Completed:Wait()
+
+	local sequence3 = TweenService:Create(cameraPart, TweenInfo.new(0.6, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-15.947, 5.4, 9.5) * CFrame.Angles(math.rad(0), math.rad(0), math.rad(0))
+	})
+	sequence3:Play()
+	sequence3.Completed:Wait()
+
+	local sequence4 = TweenService:Create(cameraPart, TweenInfo.new(1.2, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-15.947, 5.4, -1.768) * CFrame.Angles(math.rad(0), math.rad(-90), math.rad(0))
+	})
+	sequence4:Play()
+	sequence4.Completed:Wait()
+
+	local sequence5 = TweenService:Create(cameraPart, TweenInfo.new(1.0, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-10.947, 5.4, -1.768) * CFrame.Angles(math.rad(0), math.rad(-90), math.rad(0))
+	})
+	sequence5:Play()
+	sequence5.Completed:Wait()
+	FootStepsSound:Stop()
+
+	local sequence6 = applyOrientation(Vector3.new(0, 0, 0), 1)
+	sequence6:Play()
+	sequence6.Completed:Wait()
+end
+
+local function doorBackwardAnimation()
+	local easingStyle = Enum.EasingStyle.Quad
+	local easingDirection = Enum.EasingDirection.InOut
+
+	local sequence1 = applyOrientation(Vector3.new(0, 90, 0), 1)
+	sequence1:Play()
+	sequence1.Completed:Wait()
+
+	FootStepsSound:Play()
+
+	local sequence2 = TweenService:Create(cameraPart, TweenInfo.new(1.0, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-15.947, 5.4, -1.768) * CFrame.Angles(math.rad(0), math.rad(180), math.rad(0))
+	})
+	sequence2:Play()
+	sequence2.Completed:Wait()
+
+	local sequence3 = applyOrientation(Vector3.new(0, 180, 0), 0.5)
+	sequence3:Play()
+	sequence3.Completed:Wait()
+
+	local sequence4 = TweenService:Create(cameraPart, TweenInfo.new(1.2, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-15.947, 5.4, 2.5) * CFrame.Angles(math.rad(0), math.rad(180), math.rad(0))
+	})
+	sequence4:Play()
+	sequence4.Completed:Wait()
+
+	local sequence5 = TweenService:Create(cameraPart, TweenInfo.new(1.2, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-15.947, 5.4, 9.5) * CFrame.Angles(math.rad(0), math.rad(180), math.rad(0))
+	})
+	sequence5:Play()
+	sequence5.Completed:Wait()
+
+	local sequence6 = TweenService:Create(cameraPart, TweenInfo.new(1.2, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-15.947, 5.4, 14.232) * CFrame.Angles(math.rad(0), math.rad(180), math.rad(0))
+	})
+	sequence6:Play()
+	sequence6.Completed:Wait()
+
+	local sequence7 = TweenService:Create(cameraPart, TweenInfo.new(1.2, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-15.947, 5.4, 14.232) * CFrame.Angles(math.rad(5), math.rad(-114.46), math.rad(0.003))
+	})
+	sequence7:Play()
+	sequence7.Completed:Wait()
+	FootStepsSound:Stop()
+	local sequence8 = TweenService:Create(cameraPart, TweenInfo.new(0.8, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-15.947, 4.89, 14.232) * CFrame.Angles(math.rad(-0.008), math.rad(-114.46), math.rad(0.003))
+	})
+	sequence8:Play()
+	wait(0.6)
+	ChairSound:Play()
+end
+
+local function tableForwardAnimation()
+	local easingStyle = Enum.EasingStyle.Quad
+	local easingDirection = Enum.EasingDirection.InOut
+
+	ChairSound:Play()
+
+	local sequence1 = TweenService:Create(cameraPart, TweenInfo.new(0.8, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-15.947, 5.4, 14.232) * CFrame.Angles(math.rad(5), math.rad(-114.46), math.rad(0.003))
+	})
+	sequence1:Play()
+	sequence1.Completed:Wait()
+
+	FootStepsSound:Play()
+
+	local sequence2 = TweenService:Create(cameraPart, TweenInfo.new(1.2, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-15.947, 5.4, 14.232) * CFrame.Angles(math.rad(0), math.rad(0), math.rad(0))
+	})
+	sequence2:Play()
+	sequence2.Completed:Wait()
+
+	local sequence3 = TweenService:Create(cameraPart, TweenInfo.new(0.6, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-15.947, 5.4, 11.5) * CFrame.Angles(math.rad(0), math.rad(0), math.rad(0))
+	})
+	sequence3:Play()
+	sequence3.Completed:Wait()
+
+	local sequence4 = TweenService:Create(cameraPart, TweenInfo.new(1.0, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-15.947, 5.4, 6.232) * CFrame.Angles(math.rad(0), math.rad(0), math.rad(0))
+	})
+	sequence4:Play()
+	sequence4.Completed:Wait()
+
+	local sequence5 = applyOrientation(Vector3.new(-45, -90, 0), 1)
+	sequence5:Play()
+	sequence5.Completed:Wait()
+
+	local sequence6 = TweenService:Create(cameraPart, TweenInfo.new(1.2, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-13.5, 5.0, 6.232) * cameraPart.CFrame.Rotation
+	})
+	sequence6:Play()
+	sequence6.Completed:Wait()
+
+	FootStepsSound:Stop()
+
+	local sequence7 = TweenService:Create(cameraPart, TweenInfo.new(0.8, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-12.374, 4.89, 6.232) * cameraPart.CFrame.Rotation
+	})
+	sequence7:Play()
+	sequence7.Completed:Wait()
+end
+
+local function tableBackwardAnimation()
+	local easingStyle = Enum.EasingStyle.Quad
+	local easingDirection = Enum.EasingDirection.InOut
+
+	local sequence1 = TweenService:Create(cameraPart, TweenInfo.new(0.8, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-13.5, 5.0, 6.232) * cameraPart.CFrame.Rotation
+	})
+	sequence1:Play()
+	sequence1.Completed:Wait()
+
+	FootStepsSound:Play()
+
+	local sequence2 = TweenService:Create(cameraPart, TweenInfo.new(1.2, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-15.947, 5.4, 6.232) * cameraPart.CFrame.Rotation
+	})
+	sequence2:Play()
+	sequence2.Completed:Wait()
+
+	local sequence3 = applyOrientation(Vector3.new(0, 180, 0), 1)
+	sequence3:Play()
+	sequence3.Completed:Wait()
+
+	local sequence4 = TweenService:Create(cameraPart, TweenInfo.new(1.0, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-15.947, 5.4, 11.5) * CFrame.Angles(math.rad(0), math.rad(180), math.rad(0))
+	})
+	sequence4:Play()
+	sequence4.Completed:Wait()
+
+	local sequence5 = TweenService:Create(cameraPart, TweenInfo.new(0.6, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-15.947, 5.4, 14.232) * CFrame.Angles(math.rad(0), math.rad(180), math.rad(0))
+	})
+	sequence5:Play()
+	sequence5.Completed:Wait()
+
+	local sequence6 = TweenService:Create(cameraPart, TweenInfo.new(1.2, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-15.947, 5.4, 14.232) * CFrame.Angles(math.rad(5), math.rad(-114.46), math.rad(0.003))
+	})
+	sequence6:Play()
+	sequence6.Completed:Wait()
+
+	FootStepsSound:Stop()
+
+	local sequence7 = TweenService:Create(cameraPart, TweenInfo.new(0.8, easingStyle, easingDirection), {
+		CFrame = CFrame.new(-15.947, 4.89, 14.232) * CFrame.Angles(math.rad(-0.008), math.rad(-114.46), math.rad(0.003))
+	})
+	sequence7:Play()
+	wait(0.6)
+
+	ChairSound:Play()
+end
+
+DoorButton.MouseButton1Click:Connect(function()
+	targetPart.Position = Vector3.new(-11.092, 9999, 15.901)
+	DoorButton.Visible = false
+	TableButton.Visible = false
+	doorForwardAnimation()
+	Door_Open:Play()
+	TweenService:Create(Music, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Volume = 0}):Play()
+	openDoor()
+	local bottomButton = Instance.new("ImageButton")
+	bottomButton.Name = "DoorBottomButton"
+	bottomButton.Size = UDim2.new(0.1, 0, 0.1, 0)
+	bottomButton.AnchorPoint = Vector2.new(0.5, 1)
+	bottomButton.Position = UDim2.new(0.5, 0, 1, 0)
+	bottomButton.BackgroundTransparency = 1
+	bottomButton.Image = "rbxassetid://99048260512131"
+	bottomButton.Parent = SG
+
+	bottomButton.MouseButton1Click:Connect(function()
+		bottomButton:Destroy()
+		Door_Open:Stop()
+		TweenService:Create(Music, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Volume = 0.7}):Play()
+		Door_Close:Play()
+		closeDoor()
+		doorBackwardAnimation()
+		targetPart.Position = Vector3.new(-11.092, 4.926, 15.901)
+		DoorButton.Visible = true
+		TableButton.Visible = true
+	end)
+end)
+
+TableButton.MouseButton1Click:Connect(function()
+	targetPart.Position = Vector3.new(-11.092, 9999, 15.901)
+	DoorButton.Visible = false
+	TableButton.Visible = false
+
+	tableForwardAnimation()
+
+	local bottomButton = Instance.new("ImageButton")
+	bottomButton.Name = "TableBottomButton"
+	bottomButton.Size = UDim2.new(0.1, 0, 0.1, 0)
+	bottomButton.AnchorPoint = Vector2.new(0.5, 1)
+	bottomButton.Position = UDim2.new(0.5, 0, 1, 0)
+	bottomButton.BackgroundTransparency = 1
+	bottomButton.Image = "rbxassetid://99048260512131"
+	bottomButton.Parent = SG
+
+	bottomButton.MouseButton1Click:Connect(function()
+		bottomButton:Destroy()
+		tableBackwardAnimation()
+		DoorButton.Visible = true
+		TableButton.Visible = true
+		targetPart.Position = Vector3.new(-11.092, 4.926, 15.901)
+	end)
+end)
+
+F.Parent = SG
+F.Size = UDim2.new(1,0,1,0)
+F.BackgroundColor3 = Color3.new(0,0,0)
+F.Position = UDim2.new(0,0,0,0)
+F.AutoButtonColor = false
+
+coroutine.wrap(function()
+	local history = {}
+	local stable = 0
+	local maxFPS = 60
+
+	while true do
+		local fps = math.clamp(1 / RunService.RenderStepped:Wait(), 0, maxFPS)
+		table.insert(history, fps)
+		if #history > 10 then
+			table.remove(history, 1)
+			local sum = 0
+			for _, v in ipairs(history) do sum += v end
+			local avg = sum / #history
+			local dev = 0
+			for _, v in ipairs(history) do dev += math.abs(v - avg) end
+			dev /= #history
+			if dev <= 2 then
+				stable += 1
+				if stable >= 3 then
+					TweenService:Create(F, TweenInfo.new(1), {BackgroundTransparency = 1}):Play()
+					wait(1)
+					F.Visible = false
+					break
+				end
+			else
+				stable = 0
+			end
+		end
+		task.wait(0.1)
+	end
+end)()
+
+RunService.RenderStepped:Connect(function()
+	local pos = UIS:GetMouseLocation()
+	local vp = cam.ViewportSize
+	local x = (pos.X - vp.X/2) / (vp.X/2)
+	local y = (pos.Y - vp.Y/2) / (vp.Y/2)
+	local follow = CFrame.Angles(-y*0.2, -x*0.2, 0)
+	local currentCFrame = cameraPart.CFrame * follow
+	cam.CFrame = currentCFrame
+	offset = Vector2.new(0,0)
+end)
