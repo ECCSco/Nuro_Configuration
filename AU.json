@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage, globalShortcut } = require('electron');
+const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -7,7 +7,6 @@ let tray;
 let splashWindow;
 let config = {};
 let notificationWindows = [];
-let isAboveFullscreen = false;
 let fullscreenCheckInterval;
 
 app.name = 'Nuro';
@@ -956,8 +955,25 @@ function createTray() {
 
     tray.setToolTip('Nuro');
 
-    tray.on('click', () => {
+    tray.on('click', (event) => {
+        if (event.button === 1 || (process.platform === 'darwin' ? event.altKey : event.shiftKey)) {
+            return;
+        }
         toggleWindow();
+    });
+
+    tray.on('right-click', () => {
+        if (win && !win.isDestroyed() && win.isVisible() && config.alwaysOnTop) {
+            win.setAlwaysOnTop(false);
+        }
+        tray.popUpContextMenu();
+        setTimeout(() => {
+            if (win && !win.isDestroyed() && win.isVisible() && config.alwaysOnTop) {
+                win.setAlwaysOnTop(true, 'screen-saver');
+                win.setVisibleOnAllWorkspaces(true);
+                win.moveTop();
+            }
+        }, 300);
     });
 }
 
