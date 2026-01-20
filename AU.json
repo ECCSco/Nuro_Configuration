@@ -650,16 +650,36 @@ function getWindowPosition() {
     
     const width = config.width || 400;
     const side = config.side || 'right';
-    const height = Math.floor(workArea.height / 2);
+    const height = Math.floor(bounds.height / 2);
     
     let x;
     if (side === 'right') {
-        x = workArea.x + workArea.width - width;
+        x = bounds.x + bounds.width - width;
     } else {
-        x = workArea.x;
+        x = bounds.x;
     }
 
-    const y = bounds.y + bounds.height - height;
+    let y;
+    
+    if (config.alwaysOnTop) {
+        const allWindows = BrowserWindow.getAllWindows();
+        const isAnyWindowFullscreenAndAbove = allWindows.some(w => 
+            w !== win && 
+            !w.isDestroyed() && 
+            w.isAlwaysOnTop() && 
+            (w.isFullScreen() || w.isFullScreenable())
+        );
+        
+        if (isAnyWindowFullscreenAndAbove) {
+            y = bounds.y + bounds.height - height;
+        } else if (workArea.height < bounds.height) {
+            y = workArea.y + workArea.height - height;
+        } else {
+            y = bounds.y + bounds.height - height;
+        }
+    } else {
+        y = workArea.y + workArea.height - height;
+    }
 
     return {
         x: x,
@@ -912,6 +932,8 @@ async function createWindow() {
         if (config.alwaysOnTop) {
             win.setAlwaysOnTop(true, 'screen-saver');
             win.setVisibleOnAllWorkspaces(true);
+            const bounds = getWindowPosition();
+            win.setBounds(bounds);
         }
     });
 }
