@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -7,6 +7,8 @@ let tray;
 let splashWindow;
 let config = {};
 let notificationWindows = [];
+let isAboveFullscreen = false;
+let fullscreenCheckInterval;
 
 app.name = 'Nuro';
 
@@ -125,7 +127,6 @@ function showSystemNotification(title, message) {
         frame: false,
         transparent: true,
         alwaysOnTop: true,
-        visibleOnFullScreen: true,
         skipTaskbar: true,
         resizable: false,
         movable: false,
@@ -283,7 +284,6 @@ function createSplashWindow() {
         frame: false,
         transparent: true,
         alwaysOnTop: true,
-        visibleOnFullScreen: true,
         skipTaskbar: true,
         resizable: false,
         movable: false,
@@ -674,6 +674,21 @@ function toggleWindow() {
             win.setBounds(bounds);
         }
         win.show();
+        bringToFront();
+    }
+}
+
+function bringToFront() {
+    if (win && !win.isDestroyed() && win.isVisible()) {
+        win.setAlwaysOnTop(true, 'screen-saver');
+        setTimeout(() => {
+            if (win && !win.isDestroyed()) {
+                win.focus();
+                win.moveTop();
+                win.setAlwaysOnTop(true, 'screen-saver');
+                win.setVisibleOnAllWorkspaces(true);
+            }
+        }, 100);
     }
 }
 
@@ -684,10 +699,11 @@ function toggleAlwaysOnTop() {
     
     if (win && !win.isDestroyed()) {
         if (newValue) {
-            win.setAlwaysOnTop(true, 'pop-up-menu');
-            win.setVisibleOnFullScreen(true);
+            win.setAlwaysOnTop(true, 'screen-saver');
+            win.setVisibleOnAllWorkspaces(true);
         } else {
             win.setAlwaysOnTop(false);
+            win.setVisibleOnAllWorkspaces(false);
         }
     }
     
@@ -756,6 +772,17 @@ function toggleFreeWindow() {
     updateTrayMenu();
 }
 
+function checkFullscreenWindows() {
+    const allWindows = BrowserWindow.getAllWindows();
+    const fullscreenWindow = allWindows.find(w => w.isFullScreen() || w.isFullScreenable());
+    
+    if (fullscreenWindow && win && !win.isDestroyed() && win.isVisible() && config.alwaysOnTop) {
+        win.setAlwaysOnTop(true, 'screen-saver');
+        win.setVisibleOnAllWorkspaces(true);
+        win.moveTop();
+    }
+}
+
 async function createWindow() {
     const configUrl = await fetchConfig();
     if (!configUrl) {
@@ -778,9 +805,11 @@ async function createWindow() {
         titleBarStyle: 'hidden',
         frame: false,
         backgroundColor: '#000000',
-        alwaysOnTop: config.alwaysOnTop ? 'pop-up-menu' : false,
+        alwaysOnTop: config.alwaysOnTop ? 'screen-saver' : false,
         skipTaskbar: true,
-        visibleOnFullScreen: config.alwaysOnTop
+        transparent: true,
+        visualEffectState: 'active',
+        hasShadow: false
     };
 
     if (config.isFreeWindow && config.freeWindowBounds) {
@@ -803,6 +832,11 @@ async function createWindow() {
     }
 
     win = new BrowserWindow(windowOptions);
+
+    if (config.alwaysOnTop) {
+        win.setAlwaysOnTop(true, 'screen-saver');
+        win.setVisibleOnAllWorkspaces(true);
+    }
 
     win.loadURL(configUrl);
 
@@ -843,16 +877,35 @@ async function createWindow() {
         }
     });
 
+    win.on('show', () => {
+        if (config.alwaysOnTop) {
+            win.setAlwaysOnTop(true, 'screen-saver');
+            win.setVisibleOnAllWorkspaces(true);
+            win.moveTop();
+        }
+    });
+
+    win.on('focus', () => {
+        if (config.alwaysOnTop) {
+            win.setAlwaysOnTop(true, 'screen-saver');
+            win.setVisibleOnAllWorkspaces(true);
+            win.moveTop();
+        }
+    });
+
+    win.on('restore', () => {
+        if (config.alwaysOnTop) {
+            win.setAlwaysOnTop(true, 'screen-saver');
+            win.setVisibleOnAllWorkspaces(true);
+            win.moveTop();
+        }
+    });
+
     win.on('blur', () => {
-        if (config.alwaysOnTop === false && win.isVisible()) {
-            setTimeout(() => {
-                if (win && !win.isDestroyed() && !win.isFocused()) {
-                    const focusedWindow = BrowserWindow.getFocusedWindow();
-                    if (focusedWindow && focusedWindow.id !== win.id) {
-                        win.hide();
-                    }
-                }
-            }, 100);
+        if (config.alwaysOnTop) {
+            win.setAlwaysOnTop(true, 'screen-saver');
+            win.setVisibleOnAllWorkspaces(true);
+            win.moveTop();
         }
     });
 
@@ -889,12 +942,7 @@ async function createWindow() {
         }
     });
 
-    win.on('show', () => {
-        if (config.alwaysOnTop) {
-            win.setAlwaysOnTop(true, 'pop-up-menu');
-            win.setVisibleOnFullScreen(true);
-        }
-    });
+    fullscreenCheckInterval = setInterval(checkFullscreenWindows, 1000);
 }
 
 function createTray() {
@@ -982,6 +1030,12 @@ function updateTrayMenu() {
         },
         { type: 'separator' },
         {
+            label: 'Поверх всего',
+            click: () => {
+                bringToFront();
+            }
+        },
+        {
             label: 'Проверить обновления',
             click: () => {
                 checkForUpdates();
@@ -1054,6 +1108,9 @@ app.on("window-all-closed", (event) => {
 
 app.on('before-quit', () => {
     app.isQuitting = true;
+    if (fullscreenCheckInterval) {
+        clearInterval(fullscreenCheckInterval);
+    }
     notificationWindows.forEach(win => {
         if (win && !win.isDestroyed()) {
             win.close();
