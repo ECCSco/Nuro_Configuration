@@ -125,6 +125,7 @@ function showSystemNotification(title, message) {
         frame: false,
         transparent: true,
         alwaysOnTop: true,
+        visibleOnFullScreen: true,
         skipTaskbar: true,
         resizable: false,
         movable: false,
@@ -282,6 +283,7 @@ function createSplashWindow() {
         frame: false,
         transparent: true,
         alwaysOnTop: true,
+        visibleOnFullScreen: true,
         skipTaskbar: true,
         resizable: false,
         movable: false,
@@ -682,7 +684,8 @@ function toggleAlwaysOnTop() {
     
     if (win && !win.isDestroyed()) {
         if (newValue) {
-            win.setAlwaysOnTop(true, 'screen-saver');
+            win.setAlwaysOnTop(true, 'pop-up-menu');
+            win.setVisibleOnFullScreen(true);
         } else {
             win.setAlwaysOnTop(false);
         }
@@ -775,8 +778,9 @@ async function createWindow() {
         titleBarStyle: 'hidden',
         frame: false,
         backgroundColor: '#000000',
-        alwaysOnTop: config.alwaysOnTop ? 'screen-saver' : false,
-        skipTaskbar: true
+        alwaysOnTop: config.alwaysOnTop ? 'pop-up-menu' : false,
+        skipTaskbar: true,
+        visibleOnFullScreen: config.alwaysOnTop
     };
 
     if (config.isFreeWindow && config.freeWindowBounds) {
@@ -887,7 +891,8 @@ async function createWindow() {
 
     win.on('show', () => {
         if (config.alwaysOnTop) {
-            win.setAlwaysOnTop(true, 'screen-saver');
+            win.setAlwaysOnTop(true, 'pop-up-menu');
+            win.setVisibleOnFullScreen(true);
         }
     });
 }
