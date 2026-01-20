@@ -8,7 +8,6 @@ let splashWindow;
 let config = {};
 let notificationWindows = [];
 let trayContextMenu;
-let isTrayMenuOpen = false;
 
 app.name = 'Nuro';
 
@@ -140,6 +139,9 @@ function showSystemNotification(title, message) {
             contextIsolation: false
         }
     });
+    
+    notificationWindow.setAlwaysOnTop(true, 'screen-saver');
+    notificationWindow.setVisibleOnAllWorkspaces(true);
     
     notificationWindows.push(notificationWindow);
     
@@ -298,6 +300,9 @@ function createSplashWindow() {
         }
     });
     
+    splashWindow.setAlwaysOnTop(true, 'screen-saver');
+    splashWindow.setVisibleOnAllWorkspaces(true);
+    
     const splashHTML = `
         <!DOCTYPE html>
         <html>
@@ -305,13 +310,8 @@ function createSplashWindow() {
             <meta charset="UTF-8">
             <style>
                 :root {
-                    --primary-bg: #1a1a1a;
-                    --shadow-dark: rgba(0,0,0,0.4);
-                    --shadow-light: rgba(255,255,255,0.05);
                     --accent-blue: #64b5f6;
                     --accent-orange: #ffb74d;
-                    --text-primary: #e0e0e0;
-                    --text-secondary: #9e9e9e;
                 }
                 
                 * {
@@ -386,28 +386,6 @@ function createSplashWindow() {
                     animation: shine 6s linear infinite;
                 }
                 
-                .particles {
-                    position: absolute;
-                    width: 100%;
-                    height: 100%;
-                    z-index: 1;
-                    overflow: hidden;
-                }
-                
-                .particle {
-                    position: absolute;
-                    width: 2px;
-                    height: 2px;
-                    background: var(--accent-blue);
-                    border-radius: 50%;
-                    opacity: 0;
-                    animation: particleFloat 6s linear infinite;
-                }
-                
-                .particle:nth-child(odd) {
-                    background: var(--accent-orange);
-                }
-                
                 @keyframes textGradient {
                     0%, 100% {
                         background-position: 0% 50%;
@@ -426,23 +404,6 @@ function createSplashWindow() {
                     }
                 }
                 
-                @keyframes particleFloat {
-                    0% {
-                        transform: translateY(100vh) rotate(0deg);
-                        opacity: 0;
-                    }
-                    10% {
-                        opacity: 0.5;
-                    }
-                    90% {
-                        opacity: 0.5;
-                    }
-                    100% {
-                        transform: translateY(-100px) rotate(360deg);
-                        opacity: 0;
-                    }
-                }
-                
                 @keyframes fadeOut {
                     from {
                         opacity: 1;
@@ -455,27 +416,15 @@ function createSplashWindow() {
         </head>
         <body>
             <div class="splash-container">
-                <div class="particles" id="particles"></div>
                 <div class="logo-text">Nuro</div>
             </div>
             <script>
-                const particlesContainer = document.getElementById('particles');
-                
-                for (let i = 0; i < 20; i++) {
-                    const particle = document.createElement('div');
-                    particle.className = 'particle';
-                    particle.style.left = Math.random() * 100 + '%';
-                    particle.style.animationDelay = Math.random() * 6 + 's';
-                    particle.style.animationDuration = Math.random() * 3 + 4 + 's';
-                    particlesContainer.appendChild(particle);
-                }
-                
                 setTimeout(() => {
                     document.querySelector('.splash-container').style.animation = 'fadeOut 1.5s ease forwards';
                     setTimeout(() => {
                         window.close();
                     }, 1500);
-                }, 2500);
+                }, 2000);
             </script>
         </body>
         </html>
@@ -571,6 +520,14 @@ function toggleWindow() {
     }
 }
 
+function bringToFront() {
+    if (win && !win.isDestroyed() && win.isVisible() && config.alwaysOnTop) {
+        win.setAlwaysOnTop(true, 'screen-saver');
+        win.setVisibleOnAllWorkspaces(true);
+        win.moveTop();
+    }
+}
+
 function toggleAlwaysOnTop() {
     const newValue = !config.alwaysOnTop;
     config.alwaysOnTop = newValue;
@@ -579,8 +536,10 @@ function toggleAlwaysOnTop() {
     if (win && !win.isDestroyed()) {
         if (newValue) {
             win.setAlwaysOnTop(true, 'screen-saver');
+            win.setVisibleOnAllWorkspaces(true);
         } else {
             win.setAlwaysOnTop(false);
+            win.setVisibleOnAllWorkspaces(false);
         }
     }
     
@@ -696,6 +655,11 @@ async function createWindow() {
 
     win = new BrowserWindow(windowOptions);
 
+    if (config.alwaysOnTop) {
+        win.setAlwaysOnTop(true, 'screen-saver');
+        win.setVisibleOnAllWorkspaces(true);
+    }
+
     win.loadURL(configUrl);
 
     win.webContents.on("did-finish-load", () => {
@@ -784,6 +748,7 @@ async function createWindow() {
     win.on('show', () => {
         if (config.alwaysOnTop) {
             win.setAlwaysOnTop(true, 'screen-saver');
+            win.setVisibleOnAllWorkspaces(true);
         }
     });
 }
@@ -805,7 +770,11 @@ function createTray() {
 
     tray.on('right-click', () => {
         if (trayContextMenu) {
-            trayContextMenu.popup();
+            trayContextMenu.popup({
+                window: win,
+                x: 0,
+                y: 0
+            });
         }
     });
 }
