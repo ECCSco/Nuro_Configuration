@@ -274,24 +274,24 @@ function showSystemNotification(title, message) {
     });
 }
 
-function createSplashWindow() {
+async function createSplashWindowAndApp() {
     const primaryDisplay = screen.getPrimaryDisplay();
     const { bounds } = primaryDisplay;
     
     splashWindow = new BrowserWindow({
         width: bounds.width,
         height: bounds.height,
-        x: 0,
-        y: 0,
+        x: bounds.x,
+        y: bounds.y,
         frame: false,
+        transparent: false,
         alwaysOnTop: true,
-        fullscreen: true,
         skipTaskbar: true,
         resizable: false,
         movable: false,
         minimizable: false,
         maximizable: false,
-        fullscreenable: true,
+        fullscreenable: false,
         show: false,
         focusable: false,
         backgroundColor: '#000000',
@@ -311,13 +311,6 @@ function createSplashWindow() {
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-                :root {
-                    --accent-blue: #0066ff;
-                    --accent-purple: #9d00ff;
-                    --accent-cyan: #00e0ff;
-                    --accent-pink: #ff00cc;
-                }
-                
                 * {
                     margin: 0;
                     padding: 0;
@@ -325,96 +318,115 @@ function createSplashWindow() {
                 }
                 
                 body {
-                    width: 100%;
-                    height: 100%;
+                    width: 100vw;
+                    height: 100vh;
                     background: #000000;
                     overflow: hidden;
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    opacity: 0;
-                    animation: fadeInBody 0.8s ease-out forwards;
+                    font-family: 'Arial', sans-serif;
                 }
                 
-                @keyframes fadeInBody {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
+                .splash-container {
+                    width: 100%;
+                    height: 100%;
+                    position: relative;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
                 }
                 
-                .background-container {
+                .background-overlay {
                     position: absolute;
                     width: 100%;
                     height: 100%;
-                    background: radial-gradient(
-                        circle at 30% 50%,
-                        rgba(0, 102, 255, 0.2) 0%,
-                        rgba(157, 0, 255, 0.15) 30%,
-                        rgba(0, 0, 0, 0.8) 70%
+                    background: linear-gradient(
+                        45deg,
+                        rgba(0, 0, 0, 0) 0%,
+                        rgba(0, 0, 0, 0.8) 50%,
+                        rgba(0, 0, 0, 0) 100%
                     );
                     opacity: 0;
-                    animation: fadeInBackground 1s ease-out 0.3s forwards;
-                }
-                
-                @keyframes fadeInBackground {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
+                    animation: backgroundFadeIn 1.5s ease-out forwards;
                 }
                 
                 .logo-container {
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    z-index: 10;
+                    position: relative;
+                    z-index: 2;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
                     justify-content: center;
                     opacity: 0;
-                    animation: fadeInLogoContainer 0.8s ease-out 0.5s forwards;
-                }
-                
-                @keyframes fadeInLogoContainer {
-                    from { 
-                        opacity: 0;
-                        transform: translate(-50%, -50%) scale(0.9);
-                    }
-                    to { 
-                        opacity: 1;
-                        transform: translate(-50%, -50%) scale(1);
-                    }
+                    animation: logoFadeIn 1.2s ease-out 0.3s forwards;
                 }
                 
                 .logo-text {
-                    font-size: clamp(60px, 10vw, 140px);
+                    font-size: 140px;
                     font-weight: 900;
                     background: linear-gradient(
                         135deg,
-                        var(--accent-blue) 0%,
-                        var(--accent-purple) 25%,
-                        var(--accent-cyan) 50%,
-                        var(--accent-pink) 75%,
-                        var(--accent-blue) 100%
+                        #0066ff 0%,
+                        #9d00ff 25%,
+                        #00e0ff 50%,
+                        #ff00cc 75%,
+                        #0066ff 100%
                     );
                     background-size: 300% 300%;
                     -webkit-background-clip: text;
                     background-clip: text;
                     color: transparent;
-                    letter-spacing: clamp(4px, 2vw, 8px);
+                    letter-spacing: 8px;
                     text-transform: uppercase;
-                    position: relative;
-                    text-align: center;
-                    line-height: 1;
+                    animation: gradientShift 8s linear infinite 1.5s;
+                }
+                
+                .loading-container {
+                    position: absolute;
+                    bottom: 80px;
+                    width: 100%;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 3;
                     opacity: 0;
-                    text-shadow: 
-                        0 0 30px rgba(0, 102, 255, 0.5),
-                        0 0 20px rgba(157, 0, 255, 0.3),
-                        0 0 10px rgba(0, 224, 255, 0.2);
-                    animation: 
-                        gradientShift 4s ease infinite 1s,
-                        fadeInLogo 0.8s ease-out 0.7s forwards;
+                    animation: loadingFadeIn 1s ease-out 0.8s forwards;
+                }
+                
+                .loading-bar {
+                    width: 400px;
+                    height: 4px;
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 2px;
+                    overflow: hidden;
+                }
+                
+                .loading-progress {
+                    width: 0%;
+                    height: 100%;
+                    background: linear-gradient(90deg, #0066ff, #9d00ff, #00e0ff);
+                    border-radius: 2px;
+                    animation: loadingProgress 2.5s ease-in-out forwards;
+                }
+                
+                @keyframes backgroundFadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                
+                @keyframes logoFadeIn {
+                    from { 
+                        opacity: 0;
+                        transform: translateY(30px);
+                    }
+                    to { 
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                
+                @keyframes loadingFadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
                 }
                 
                 @keyframes gradientShift {
@@ -426,163 +438,40 @@ function createSplashWindow() {
                     }
                 }
                 
-                @keyframes fadeInLogo {
-                    from { opacity: 0; transform: translateY(10px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                
-                .simple-particles {
-                    position: absolute;
-                    width: 100%;
-                    height: 100%;
-                    z-index: 5;
-                }
-                
-                .simple-particle {
-                    position: absolute;
-                    background: var(--accent-blue);
-                    border-radius: 50%;
-                    opacity: 0;
-                    animation: particleFloat linear infinite;
-                }
-                
-                .simple-particle:nth-child(2n) {
-                    background: var(--accent-purple);
-                }
-                
-                .simple-particle:nth-child(3n) {
-                    background: var(--accent-cyan);
-                }
-                
-                .simple-particle:nth-child(4n) {
-                    background: var(--accent-pink);
-                }
-                
-                @keyframes particleFloat {
-                    0% {
-                        transform: translateY(100vh) translateX(0);
-                        opacity: 0;
-                    }
-                    10% {
-                        opacity: 0.7;
-                    }
-                    90% {
-                        opacity: 0.7;
-                    }
-                    100% {
-                        transform: translateY(-100px) translateX(20px);
-                        opacity: 0;
-                    }
-                }
-                
-                .loading-container {
-                    position: absolute;
-                    bottom: 15%;
-                    left: 0;
-                    right: 0;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    z-index: 10;
-                    opacity: 0;
-                    animation: fadeInLoading 0.8s ease-out 1s forwards;
-                }
-                
-                @keyframes fadeInLoading {
-                    from { opacity: 0; transform: translateY(10px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                
-                .loading-bar {
-                    width: min(400px, 80vw);
-                    height: 6px;
-                    background: rgba(255, 255, 255, 0.1);
-                    border-radius: 3px;
-                    overflow: hidden;
-                    position: relative;
-                    box-shadow: 0 0 20px rgba(0, 102, 255, 0.3);
-                }
-                
-                .loading-progress {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 0%;
-                    height: 100%;
-                    background: linear-gradient(90deg, 
-                        var(--accent-blue) 0%, 
-                        var(--accent-purple) 33%, 
-                        var(--accent-cyan) 66%, 
-                        var(--accent-pink) 100%);
-                    border-radius: 3px;
-                    opacity: 0;
-                    box-shadow: 0 0 15px rgba(0, 224, 255, 0.5);
-                    animation: 
-                        loading 2s ease-in-out 1.3s forwards,
-                        fadeInProgress 0.5s ease-out 1.3s forwards;
-                }
-                
-                @keyframes loading {
-                    0% {
-                        width: 0%;
-                    }
-                    70% {
-                        width: 95%;
-                    }
-                    100% {
-                        width: 100%;
-                    }
-                }
-                
-                @keyframes fadeInProgress {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
+                @keyframes loadingProgress {
+                    0% { width: 0%; }
+                    20% { width: 30%; }
+                    40% { width: 60%; }
+                    60% { width: 80%; }
+                    80% { width: 95%; }
+                    100% { width: 100%; }
                 }
                 
                 @keyframes fadeOut {
-                    from {
-                        opacity: 1;
-                    }
-                    to {
-                        opacity: 0;
-                    }
+                    from { opacity: 1; }
+                    to { opacity: 0; }
                 }
             </style>
         </head>
         <body>
-            <div class="background-container"></div>
-            <div class="simple-particles" id="simple-particles"></div>
-            
-            <div class="logo-container">
-                <div class="logo-text">NURO</div>
-            </div>
-            
-            <div class="loading-container">
-                <div class="loading-bar">
-                    <div class="loading-progress"></div>
+            <div class="splash-container">
+                <div class="background-overlay"></div>
+                <div class="logo-container">
+                    <div class="logo-text">NURO</div>
+                </div>
+                <div class="loading-container">
+                    <div class="loading-bar">
+                        <div class="loading-progress"></div>
+                    </div>
                 </div>
             </div>
-            
             <script>
-                const particlesContainer = document.getElementById('simple-particles');
-                
-                for (let i = 0; i < 25; i++) {
-                    const particle = document.createElement('div');
-                    particle.className = 'simple-particle';
-                    particle.style.left = Math.random() * 100 + '%';
-                    particle.style.width = Math.random() * 3 + 1 + 'px';
-                    particle.style.height = particle.style.width;
-                    particle.style.animationDuration = Math.random() * 2 + 3 + 's';
-                    particle.style.animationDelay = Math.random() * 2 + 's';
-                    particlesContainer.appendChild(particle);
-                }
-                
                 setTimeout(() => {
                     document.body.style.animation = 'fadeOut 0.8s ease forwards';
                     setTimeout(() => {
                         window.close();
                     }, 800);
-                }, 3000);
+                }, 3500);
             </script>
         </body>
         </html>
@@ -596,7 +485,6 @@ function createSplashWindow() {
     
     splashWindow.on('closed', () => {
         splashWindow = null;
-        createWindow();
     });
 }
 
@@ -796,7 +684,7 @@ async function createWindow() {
             enableRemoteModule: false,
             webSecurity: true
         },
-        show: true,
+        show: false,
         titleBarStyle: 'hidden',
         frame: false,
         backgroundColor: '#000000',
@@ -856,6 +744,16 @@ async function createWindow() {
                 pointer-events: auto;
             }
         `);
+        
+        if (config.showSplash !== false) {
+            setTimeout(() => {
+                if (win && !win.isDestroyed()) {
+                    win.show();
+                }
+            }, 3500);
+        } else {
+            win.show();
+        }
     });
 
     win.webContents.on('did-fail-load', () => {
@@ -1069,7 +967,8 @@ app.whenReady().then(async () => {
     }
     
     if (config.showSplash !== false) {
-        createSplashWindow();
+        createSplashWindowAndApp();
+        await createWindow();
     } else {
         await createWindow();
     }
