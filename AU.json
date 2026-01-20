@@ -286,7 +286,6 @@ function createSplashWindow() {
         frame: false,
         transparent: true,
         alwaysOnTop: true,
-        fullscreen: false,
         skipTaskbar: true,
         resizable: false,
         movable: false,
@@ -311,28 +310,21 @@ function createSplashWindow() {
             <meta charset="UTF-8">
             <style>
                 :root {
-                    --primary-bg: #1a1a1a;
-                    --shadow-dark: rgba(0,0,0,0.4);
-                    --shadow-light: rgba(255,255,255,0.05);
-                    --accent-blue: #64b5f6;
-                    --accent-orange: #ffb74d;
-                    --text-primary: #e0e0e0;
-                    --text-secondary: #9e9e9e;
+                    --primary-bg: #0a0a0a;
+                    --accent-blue: #0066ff;
+                    --accent-purple: #9d00ff;
+                    --accent-cyan: #00e0ff;
+                    --accent-pink: #ff00cc;
+                    --glow-blue: rgba(0, 102, 255, 0.6);
+                    --glow-purple: rgba(157, 0, 255, 0.6);
+                    --glow-cyan: rgba(0, 224, 255, 0.6);
+                    --glow-pink: rgba(255, 0, 204, 0.6);
                 }
                 
                 * {
                     margin: 0;
                     padding: 0;
                     box-sizing: border-box;
-                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                    -webkit-tap-highlight-color: transparent;
-                    -webkit-font-smoothing: antialiased;
-                }
-                
-                html, body {
-                    width: 100%;
-                    height: 100%;
-                    overflow: hidden;
                 }
                 
                 body {
@@ -342,209 +334,262 @@ function createSplashWindow() {
                     display: flex;
                     justify-content: center;
                     align-items: center;
-                    margin: 0;
-                    padding: 0;
-                }
-                
-                .splash-container {
-                    width: 100%;
-                    height: 100%;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    align-items: center;
-                    position: relative;
                     overflow: hidden;
+                    position: relative;
                 }
                 
-                .gradient-background {
+                .universe {
                     position: absolute;
                     width: 100%;
                     height: 100%;
-                    background: linear-gradient(
-                        45deg,
-                        #000000,
-                        #0a0a0a,
-                        #1a1a1a,
-                        #0a0a0a,
-                        #000000
-                    );
-                    background-size: 400% 400%;
-                    animation: gradientShift 8s ease infinite;
-                    opacity: 0.95;
+                    background: 
+                        radial-gradient(circle at 20% 80%, rgba(0, 102, 255, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(157, 0, 255, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 40%, rgba(0, 224, 255, 0.1) 0%, transparent 50%);
+                    filter: blur(40px);
+                    animation: universePulse 8s ease-in-out infinite;
+                }
+                
+                .stars {
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
+                }
+                
+                .star {
+                    position: absolute;
+                    background: white;
+                    border-radius: 50%;
+                    animation: twinkle var(--duration) ease-in-out infinite;
+                }
+                
+                .nebula {
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
                     filter: blur(60px);
+                    opacity: 0.4;
+                }
+                
+                .nebula-layer {
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
+                    background: radial-gradient(circle at var(--x) var(--y), var(--color) 0%, transparent 70%);
+                    animation: nebulaFloat var(--duration) linear infinite;
+                }
+                
+                .logo-container {
+                    position: relative;
+                    z-index: 10;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
                 }
                 
                 .logo-text {
-                    font-size: 120px;
+                    font-size: 140px;
                     font-weight: 900;
                     background: linear-gradient(
-                        90deg,
-                        var(--accent-blue),
-                        #ffffff,
-                        var(--accent-orange),
-                        var(--accent-blue)
+                        135deg,
+                        var(--accent-blue) 0%,
+                        var(--accent-purple) 25%,
+                        var(--accent-cyan) 50%,
+                        var(--accent-pink) 75%,
+                        var(--accent-blue) 100%
                     );
                     background-size: 300% 300%;
                     -webkit-background-clip: text;
                     background-clip: text;
                     color: transparent;
-                    letter-spacing: 6px;
+                    letter-spacing: 8px;
                     text-transform: uppercase;
-                    animation: textGradient 4s ease infinite;
+                    animation: gradientShift 6s ease infinite, logoFloat 4s ease-in-out infinite;
                     position: relative;
                     text-align: center;
                     line-height: 1;
-                    z-index: 2;
-                    transform: scale(1.2);
+                    filter: drop-shadow(0 0 30px var(--glow-blue)) 
+                           drop-shadow(0 0 20px var(--glow-purple))
+                           drop-shadow(0 0 10px var(--glow-cyan));
                 }
                 
-                .logo-text::after {
-                    content: 'Nuro';
+                .logo-glow {
                     position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
+                    width: 120%;
+                    height: 120%;
                     background: linear-gradient(
-                        90deg,
-                        transparent,
-                        rgba(255, 255, 255, 0.05),
-                        transparent
+                        135deg,
+                        var(--glow-blue) 0%,
+                        var(--glow-purple) 25%,
+                        var(--glow-cyan) 50%,
+                        var(--glow-pink) 75%,
+                        var(--glow-blue) 100%
                     );
-                    background-size: 200% 100%;
-                    -webkit-background-clip: text;
-                    background-clip: text;
-                    animation: shine 6s linear infinite;
+                    background-size: 300% 300%;
+                    filter: blur(60px);
+                    opacity: 0.7;
+                    z-index: -1;
+                    animation: gradientShift 6s ease infinite, glowPulse 3s ease-in-out infinite;
                 }
                 
                 .particles {
                     position: absolute;
                     width: 100%;
                     height: 100%;
-                    z-index: 1;
-                    overflow: hidden;
+                    z-index: 5;
                 }
                 
                 .particle {
                     position: absolute;
-                    width: 4px;
-                    height: 4px;
-                    background: var(--accent-blue);
+                    width: var(--size);
+                    height: var(--size);
+                    background: radial-gradient(circle, var(--color) 0%, transparent 70%);
                     border-radius: 50%;
-                    opacity: 0;
-                    animation: particleFloat 6s linear infinite;
+                    filter: blur(2px);
+                    animation: particleOrbit var(--duration) linear infinite;
+                    transform-origin: var(--origin-x) var(--origin-y);
                 }
                 
-                .particle:nth-child(odd) {
-                    background: var(--accent-orange);
+                .energy-ring {
+                    position: absolute;
+                    width: 500px;
+                    height: 500px;
+                    border: 2px solid transparent;
+                    border-radius: 50%;
+                    z-index: 6;
+                    animation: ringRotate 20s linear infinite;
                 }
                 
-                .light-beams {
+                .ring-segment {
                     position: absolute;
                     width: 100%;
                     height: 100%;
-                    z-index: 1;
-                }
-                
-                .beam {
-                    position: absolute;
-                    width: 2px;
-                    height: 0;
-                    background: linear-gradient(to bottom, transparent, var(--accent-blue), transparent);
-                    opacity: 0.2;
-                    animation: beamScan 4s linear infinite;
-                }
-                
-                .glow-orb {
-                    position: absolute;
-                    width: 600px;
-                    height: 600px;
                     border-radius: 50%;
-                    background: radial-gradient(circle, rgba(100, 181, 246, 0.15) 0%, transparent 70%);
-                    animation: orbPulse 5s ease-in-out infinite;
-                    z-index: 1;
+                    border: 2px solid transparent;
+                    border-top-color: var(--color);
+                    border-right-color: var(--color);
+                    filter: drop-shadow(0 0 10px var(--color));
+                    animation: ringSegmentPulse 4s ease-in-out infinite;
+                }
+                
+                .loading-bar {
+                    position: absolute;
+                    bottom: 100px;
+                    width: 300px;
+                    height: 4px;
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 2px;
+                    overflow: hidden;
+                    z-index: 10;
+                }
+                
+                .loading-progress {
+                    width: 0%;
+                    height: 100%;
+                    background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple), var(--accent-cyan));
+                    border-radius: 2px;
+                    animation: loading 3.5s ease-in-out forwards;
+                }
+                
+                @keyframes universePulse {
+                    0%, 100% {
+                        opacity: 0.5;
+                        transform: scale(1);
+                    }
+                    50% {
+                        opacity: 0.8;
+                        transform: scale(1.05);
+                    }
+                }
+                
+                @keyframes twinkle {
+                    0%, 100% {
+                        opacity: 0.3;
+                        transform: scale(1);
+                    }
+                    50% {
+                        opacity: 1;
+                        transform: scale(1.2);
+                    }
+                }
+                
+                @keyframes nebulaFloat {
+                    0% {
+                        transform: translate(0, 0) rotate(0deg);
+                    }
+                    100% {
+                        transform: translate(var(--move-x), var(--move-y)) rotate(360deg);
+                    }
                 }
                 
                 @keyframes gradientShift {
-                    0% {
+                    0%, 100% {
                         background-position: 0% 50%;
-                        transform: scale(1);
                     }
                     50% {
                         background-position: 100% 50%;
+                    }
+                }
+                
+                @keyframes logoFloat {
+                    0%, 100% {
+                        transform: translateY(0) scale(1);
+                    }
+                    50% {
+                        transform: translateY(-20px) scale(1.05);
+                    }
+                }
+                
+                @keyframes glowPulse {
+                    0%, 100% {
+                        opacity: 0.5;
+                        filter: blur(60px);
+                    }
+                    50% {
+                        opacity: 0.8;
+                        filter: blur(80px);
+                    }
+                }
+                
+                @keyframes particleOrbit {
+                    0% {
+                        transform: rotate(0deg) translateX(var(--radius)) rotate(0deg);
+                    }
+                    100% {
+                        transform: rotate(360deg) translateX(var(--radius)) rotate(-360deg);
+                    }
+                }
+                
+                @keyframes ringRotate {
+                    0% {
+                        transform: rotate(0deg);
+                    }
+                    100% {
+                        transform: rotate(360deg);
+                    }
+                }
+                
+                @keyframes ringSegmentPulse {
+                    0%, 100% {
+                        opacity: 0.3;
+                        transform: scale(1);
+                    }
+                    50% {
+                        opacity: 0.8;
                         transform: scale(1.1);
                     }
-                    100% {
-                        background-position: 0% 50%;
-                        transform: scale(1);
-                    }
                 }
                 
-                @keyframes textGradient {
-                    0%, 100% {
-                        background-position: 0% 50%;
-                    }
-                    50% {
-                        background-position: 100% 50%;
-                    }
-                }
-                
-                @keyframes shine {
+                @keyframes loading {
                     0% {
-                        background-position: -200% 0;
+                        width: 0%;
+                    }
+                    70% {
+                        width: 90%;
                     }
                     100% {
-                        background-position: 200% 0;
-                    }
-                }
-                
-                @keyframes particleFloat {
-                    0% {
-                        transform: translateY(100vh) rotate(0deg);
-                        opacity: 0;
-                    }
-                    10% {
-                        opacity: 0.5;
-                    }
-                    90% {
-                        opacity: 0.5;
-                    }
-                    100% {
-                        transform: translateY(-100px) rotate(360deg);
-                        opacity: 0;
-                    }
-                }
-                
-                @keyframes beamScan {
-                    0% {
-                        height: 0;
-                        opacity: 0;
-                    }
-                    10% {
-                        opacity: 0.3;
-                    }
-                    50% {
-                        height: 100%;
-                        opacity: 0.2;
-                    }
-                    90% {
-                        opacity: 0.3;
-                    }
-                    100% {
-                        height: 0;
-                        opacity: 0;
-                    }
-                }
-                
-                @keyframes orbPulse {
-                    0%, 100% {
-                        transform: scale(1);
-                        opacity: 0.2;
-                    }
-                    50% {
-                        transform: scale(1.3);
-                        opacity: 0.3;
+                        width: 100%;
                     }
                 }
                 
@@ -559,38 +604,83 @@ function createSplashWindow() {
             </style>
         </head>
         <body>
-            <div class="splash-container">
-                <div class="gradient-background"></div>
+            <div class="universe"></div>
+            <div class="stars" id="stars"></div>
+            <div class="nebula" id="nebula"></div>
+            
+            <div class="logo-container">
+                <div class="logo-glow"></div>
+                <div class="logo-text">NURO</div>
+                <div class="energy-ring">
+                    <div class="ring-segment" style="--color: var(--accent-blue);"></div>
+                    <div class="ring-segment" style="--color: var(--accent-purple); transform: rotate(45deg);"></div>
+                    <div class="ring-segment" style="--color: var(--accent-cyan); transform: rotate(90deg);"></div>
+                    <div class="ring-segment" style="--color: var(--accent-pink); transform: rotate(135deg);"></div>
+                </div>
                 <div class="particles" id="particles"></div>
-                <div class="light-beams" id="beams"></div>
-                <div class="glow-orb"></div>
-                <div class="logo-text">Nuro</div>
+                <div class="loading-bar">
+                    <div class="loading-progress"></div>
+                </div>
             </div>
+            
             <script>
+                const starsContainer = document.getElementById('stars');
+                const nebulaContainer = document.getElementById('nebula');
                 const particlesContainer = document.getElementById('particles');
-                const beamsContainer = document.getElementById('beams');
                 
-                for (let i = 0; i < 30; i++) {
+                for (let i = 0; i < 200; i++) {
+                    const star = document.createElement('div');
+                    star.className = 'star';
+                    star.style.left = Math.random() * 100 + '%';
+                    star.style.top = Math.random() * 100 + '%';
+                    star.style.width = Math.random() * 3 + 1 + 'px';
+                    star.style.height = star.style.width;
+                    star.style.setProperty('--duration', Math.random() * 5 + 3 + 's');
+                    star.style.animationDelay = Math.random() * 5 + 's';
+                    starsContainer.appendChild(star);
+                }
+                
+                const nebulaColors = [
+                    'rgba(0, 102, 255, 0.3)',
+                    'rgba(157, 0, 255, 0.3)',
+                    'rgba(0, 224, 255, 0.3)',
+                    'rgba(255, 0, 204, 0.3)'
+                ];
+                
+                for (let i = 0; i < 4; i++) {
+                    const nebulaLayer = document.createElement('div');
+                    nebulaLayer.className = 'nebula-layer';
+                    nebulaLayer.style.setProperty('--x', Math.random() * 100 + '%');
+                    nebulaLayer.style.setProperty('--y', Math.random() * 100 + '%');
+                    nebulaLayer.style.setProperty('--color', nebulaColors[i]);
+                    nebulaLayer.style.setProperty('--duration', Math.random() * 40 + 20 + 's');
+                    nebulaLayer.style.setProperty('--move-x', Math.random() * 100 - 50 + '%');
+                    nebulaLayer.style.setProperty('--move-y', Math.random() * 100 - 50 + '%');
+                    nebulaContainer.appendChild(nebulaLayer);
+                }
+                
+                const particleColors = [
+                    'var(--accent-blue)',
+                    'var(--accent-purple)',
+                    'var(--accent-cyan)',
+                    'var(--accent-pink)'
+                ];
+                
+                for (let i = 0; i < 60; i++) {
                     const particle = document.createElement('div');
                     particle.className = 'particle';
-                    particle.style.left = Math.random() * 100 + '%';
-                    particle.style.width = Math.random() * 4 + 2 + 'px';
-                    particle.style.height = particle.style.width;
-                    particle.style.animationDelay = Math.random() * 6 + 's';
-                    particle.style.animationDuration = Math.random() * 3 + 4 + 's';
+                    particle.style.setProperty('--size', Math.random() * 6 + 2 + 'px');
+                    particle.style.setProperty('--color', particleColors[Math.floor(Math.random() * particleColors.length)]);
+                    particle.style.setProperty('--duration', Math.random() * 20 + 10 + 's');
+                    particle.style.setProperty('--origin-x', Math.random() * 100 + '%');
+                    particle.style.setProperty('--origin-y', Math.random() * 100 + '%');
+                    particle.style.setProperty('--radius', Math.random() * 200 + 100 + 'px');
+                    particle.style.animationDelay = Math.random() * 5 + 's';
                     particlesContainer.appendChild(particle);
                 }
                 
-                for (let i = 0; i < 4; i++) {
-                    const beam = document.createElement('div');
-                    beam.className = 'beam';
-                    beam.style.left = Math.random() * 100 + '%';
-                    beam.style.animationDelay = Math.random() * 4 + 's';
-                    beamsContainer.appendChild(beam);
-                }
-                
                 setTimeout(() => {
-                    document.querySelector('.splash-container').style.animation = 'fadeOut 1.5s ease forwards';
+                    document.body.style.animation = 'fadeOut 1.5s ease forwards';
                     setTimeout(() => {
                         window.close();
                     }, 1500);
