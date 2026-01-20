@@ -286,6 +286,7 @@ function createSplashWindow() {
         frame: false,
         transparent: true,
         alwaysOnTop: true,
+        fullscreen: true,
         skipTaskbar: true,
         resizable: false,
         movable: false,
@@ -310,8 +311,13 @@ function createSplashWindow() {
             <meta charset="UTF-8">
             <style>
                 :root {
+                    --primary-bg: #1a1a1a;
+                    --shadow-dark: rgba(0,0,0,0.4);
+                    --shadow-light: rgba(255,255,255,0.05);
                     --accent-blue: #64b5f6;
                     --accent-orange: #ffb74d;
+                    --text-primary: #e0e0e0;
+                    --text-secondary: #9e9e9e;
                 }
                 
                 * {
@@ -326,7 +332,7 @@ function createSplashWindow() {
                 body {
                     width: 100vw;
                     height: 100vh;
-                    background: #000000;
+                    background: transparent;
                     display: flex;
                     justify-content: center;
                     align-items: center;
@@ -342,6 +348,24 @@ function createSplashWindow() {
                     align-items: center;
                     position: relative;
                     overflow: hidden;
+                }
+                
+                .gradient-background {
+                    position: absolute;
+                    width: 200%;
+                    height: 200%;
+                    background: linear-gradient(
+                        45deg,
+                        #000000,
+                        #0a0a0a,
+                        #1a1a1a,
+                        #0a0a0a,
+                        #000000
+                    );
+                    background-size: 400% 400%;
+                    animation: gradientShift 8s ease infinite;
+                    opacity: 0.95;
+                    filter: blur(60px);
                 }
                 
                 .logo-text {
@@ -365,6 +389,7 @@ function createSplashWindow() {
                     text-align: center;
                     line-height: 1;
                     z-index: 2;
+                    transform: scale(1.2);
                 }
                 
                 .logo-text::after {
@@ -386,6 +411,69 @@ function createSplashWindow() {
                     animation: shine 6s linear infinite;
                 }
                 
+                .particles {
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
+                    z-index: 1;
+                    overflow: hidden;
+                }
+                
+                .particle {
+                    position: absolute;
+                    width: 4px;
+                    height: 4px;
+                    background: var(--accent-blue);
+                    border-radius: 50%;
+                    opacity: 0;
+                    animation: particleFloat 6s linear infinite;
+                }
+                
+                .particle:nth-child(odd) {
+                    background: var(--accent-orange);
+                }
+                
+                .light-beams {
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
+                    z-index: 1;
+                }
+                
+                .beam {
+                    position: absolute;
+                    width: 2px;
+                    height: 0;
+                    background: linear-gradient(to bottom, transparent, var(--accent-blue), transparent);
+                    opacity: 0.2;
+                    animation: beamScan 4s linear infinite;
+                }
+                
+                .glow-orb {
+                    position: absolute;
+                    width: 600px;
+                    height: 600px;
+                    border-radius: 50%;
+                    background: radial-gradient(circle, rgba(100, 181, 246, 0.15) 0%, transparent 70%);
+                    animation: orbPulse 5s ease-in-out infinite;
+                    z-index: 1;
+                }
+                
+                @keyframes gradientShift {
+                    0% {
+                        background-position: 0% 50%;
+                        transform: scale(1);
+                    }
+                    50% {
+                        background-position: 100% 50%;
+                        transform: scale(1.1);
+                    }
+                    100% {
+                        background-position: 0% 50%;
+                        transform: scale(1);
+                    }
+                }
+                
                 @keyframes textGradient {
                     0%, 100% {
                         background-position: 0% 50%;
@@ -404,6 +492,55 @@ function createSplashWindow() {
                     }
                 }
                 
+                @keyframes particleFloat {
+                    0% {
+                        transform: translateY(100vh) rotate(0deg);
+                        opacity: 0;
+                    }
+                    10% {
+                        opacity: 0.5;
+                    }
+                    90% {
+                        opacity: 0.5;
+                    }
+                    100% {
+                        transform: translateY(-100px) rotate(360deg);
+                        opacity: 0;
+                    }
+                }
+                
+                @keyframes beamScan {
+                    0% {
+                        height: 0;
+                        opacity: 0;
+                    }
+                    10% {
+                        opacity: 0.3;
+                    }
+                    50% {
+                        height: 100%;
+                        opacity: 0.2;
+                    }
+                    90% {
+                        opacity: 0.3;
+                    }
+                    100% {
+                        height: 0;
+                        opacity: 0;
+                    }
+                }
+                
+                @keyframes orbPulse {
+                    0%, 100% {
+                        transform: scale(1);
+                        opacity: 0.2;
+                    }
+                    50% {
+                        transform: scale(1.3);
+                        opacity: 0.3;
+                    }
+                }
+                
                 @keyframes fadeOut {
                     from {
                         opacity: 1;
@@ -416,15 +553,41 @@ function createSplashWindow() {
         </head>
         <body>
             <div class="splash-container">
+                <div class="gradient-background"></div>
+                <div class="particles" id="particles"></div>
+                <div class="light-beams" id="beams"></div>
+                <div class="glow-orb"></div>
                 <div class="logo-text">Nuro</div>
             </div>
             <script>
+                const particlesContainer = document.getElementById('particles');
+                const beamsContainer = document.getElementById('beams');
+                
+                for (let i = 0; i < 30; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.width = Math.random() * 4 + 2 + 'px';
+                    particle.style.height = particle.style.width;
+                    particle.style.animationDelay = Math.random() * 6 + 's';
+                    particle.style.animationDuration = Math.random() * 3 + 4 + 's';
+                    particlesContainer.appendChild(particle);
+                }
+                
+                for (let i = 0; i < 4; i++) {
+                    const beam = document.createElement('div');
+                    beam.className = 'beam';
+                    beam.style.left = Math.random() * 100 + '%';
+                    beam.style.animationDelay = Math.random() * 4 + 's';
+                    beamsContainer.appendChild(beam);
+                }
+                
                 setTimeout(() => {
                     document.querySelector('.splash-container').style.animation = 'fadeOut 1.5s ease forwards';
                     setTimeout(() => {
                         window.close();
                     }, 1500);
-                }, 2000);
+                }, 3500);
             </script>
         </body>
         </html>
@@ -483,7 +646,7 @@ function setAutoLaunch(value) {
 
 function getWindowPosition() {
     const display = screen.getPrimaryDisplay();
-    const { workArea } = display;
+    const { bounds, workArea } = display;
     
     const width = config.width || 400;
     const side = config.side || 'right';
@@ -496,7 +659,7 @@ function getWindowPosition() {
         x = workArea.x;
     }
 
-    const y = workArea.y + workArea.height - height;
+    const y = bounds.y + bounds.height - height;
 
     return {
         x: x,
