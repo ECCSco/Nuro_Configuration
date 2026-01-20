@@ -281,19 +281,20 @@ function createSplashWindow() {
     splashWindow = new BrowserWindow({
         width: bounds.width,
         height: bounds.height,
-        x: bounds.x,
-        y: bounds.y,
+        x: 0,
+        y: 0,
         frame: false,
-        transparent: true,
         alwaysOnTop: true,
+        fullscreen: true,
         skipTaskbar: true,
         resizable: false,
         movable: false,
         minimizable: false,
         maximizable: false,
-        fullscreenable: false,
+        fullscreenable: true,
         show: false,
         focusable: false,
+        backgroundColor: '#000000',
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false
@@ -308,17 +309,13 @@ function createSplashWindow() {
         <html>
         <head>
             <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
                 :root {
-                    --primary-bg: #0a0a0a;
                     --accent-blue: #0066ff;
                     --accent-purple: #9d00ff;
                     --accent-cyan: #00e0ff;
                     --accent-pink: #ff00cc;
-                    --glow-blue: rgba(0, 102, 255, 0.6);
-                    --glow-purple: rgba(157, 0, 255, 0.6);
-                    --glow-cyan: rgba(0, 224, 255, 0.6);
-                    --glow-pink: rgba(255, 0, 204, 0.6);
                 }
                 
                 * {
@@ -328,13 +325,17 @@ function createSplashWindow() {
                 }
                 
                 body {
-                    width: 100vw;
-                    height: 100vh;
+                    width: 100%;
+                    height: 100%;
                     background: #000000;
                     overflow: hidden;
-                    position: relative;
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
                     opacity: 0;
-                    animation: fadeInBody 1s ease-out forwards;
+                    animation: fadeInBody 0.8s ease-out forwards;
                 }
                 
                 @keyframes fadeInBody {
@@ -342,51 +343,23 @@ function createSplashWindow() {
                     to { opacity: 1; }
                 }
                 
-                .universe {
+                .background-container {
                     position: absolute;
                     width: 100%;
                     height: 100%;
-                    background: 
-                        radial-gradient(circle at 20% 80%, rgba(0, 102, 255, 0.15) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 20%, rgba(157, 0, 255, 0.15) 0%, transparent 50%),
-                        radial-gradient(circle at 40% 40%, rgba(0, 224, 255, 0.1) 0%, transparent 50%);
-                    filter: blur(40px);
+                    background: radial-gradient(
+                        circle at 30% 50%,
+                        rgba(0, 102, 255, 0.2) 0%,
+                        rgba(157, 0, 255, 0.15) 30%,
+                        rgba(0, 0, 0, 0.8) 70%
+                    );
                     opacity: 0;
-                    animation: universePulse 8s ease-in-out infinite, fadeInUniverse 1.5s ease-out 0.3s forwards;
+                    animation: fadeInBackground 1s ease-out 0.3s forwards;
                 }
                 
-                .stars {
-                    position: absolute;
-                    width: 100%;
-                    height: 100%;
-                    opacity: 0;
-                    animation: fadeInStars 1s ease-out 0.5s forwards;
-                }
-                
-                .star {
-                    position: absolute;
-                    background: white;
-                    border-radius: 50%;
-                    opacity: 0;
-                    animation: twinkle var(--duration) ease-in-out infinite, fadeInStar 1s ease-out calc(0.5s + var(--delay)) forwards;
-                }
-                
-                .nebula {
-                    position: absolute;
-                    width: 100%;
-                    height: 100%;
-                    filter: blur(60px);
-                    opacity: 0;
-                    animation: fadeInNebula 1.5s ease-out 0.7s forwards;
-                }
-                
-                .nebula-layer {
-                    position: absolute;
-                    width: 100%;
-                    height: 100%;
-                    background: radial-gradient(circle at var(--x) var(--y), var(--color) 0%, transparent 70%);
-                    opacity: 0;
-                    animation: nebulaFloat var(--duration) linear infinite, fadeInNebulaLayer 1s ease-out calc(0.7s + var(--layer-delay)) forwards;
+                @keyframes fadeInBackground {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
                 }
                 
                 .logo-container {
@@ -400,11 +373,22 @@ function createSplashWindow() {
                     align-items: center;
                     justify-content: center;
                     opacity: 0;
-                    animation: fadeInLogoContainer 1.2s ease-out 1s forwards;
+                    animation: fadeInLogoContainer 0.8s ease-out 0.5s forwards;
+                }
+                
+                @keyframes fadeInLogoContainer {
+                    from { 
+                        opacity: 0;
+                        transform: translate(-50%, -50%) scale(0.9);
+                    }
+                    to { 
+                        opacity: 1;
+                        transform: translate(-50%, -50%) scale(1);
+                    }
                 }
                 
                 .logo-text {
-                    font-size: 140px;
+                    font-size: clamp(60px, 10vw, 140px);
                     font-weight: 900;
                     background: linear-gradient(
                         135deg,
@@ -418,83 +402,82 @@ function createSplashWindow() {
                     -webkit-background-clip: text;
                     background-clip: text;
                     color: transparent;
-                    letter-spacing: 8px;
+                    letter-spacing: clamp(4px, 2vw, 8px);
                     text-transform: uppercase;
                     position: relative;
                     text-align: center;
                     line-height: 1;
                     opacity: 0;
-                    filter: drop-shadow(0 0 30px var(--glow-blue)) 
-                           drop-shadow(0 0 20px var(--glow-purple))
-                           drop-shadow(0 0 10px var(--glow-cyan));
-                    animation: gradientShift 6s ease infinite 1.5s, logoFloat 4s ease-in-out infinite 1.5s, fadeInLogo 1s ease-out 1.2s forwards;
+                    text-shadow: 
+                        0 0 30px rgba(0, 102, 255, 0.5),
+                        0 0 20px rgba(157, 0, 255, 0.3),
+                        0 0 10px rgba(0, 224, 255, 0.2);
+                    animation: 
+                        gradientShift 4s ease infinite 1s,
+                        fadeInLogo 0.8s ease-out 0.7s forwards;
                 }
                 
-                .logo-glow {
-                    position: absolute;
-                    width: 120%;
-                    height: 120%;
-                    background: linear-gradient(
-                        135deg,
-                        var(--glow-blue) 0%,
-                        var(--glow-purple) 25%,
-                        var(--glow-cyan) 50%,
-                        var(--glow-pink) 75%,
-                        var(--glow-blue) 100%
-                    );
-                    background-size: 300% 300%;
-                    filter: blur(60px);
-                    opacity: 0;
-                    z-index: -1;
-                    animation: gradientShift 6s ease infinite 1.5s, glowPulse 3s ease-in-out infinite 1.5s, fadeInGlow 1s ease-out 1s forwards;
+                @keyframes gradientShift {
+                    0%, 100% {
+                        background-position: 0% 50%;
+                    }
+                    50% {
+                        background-position: 100% 50%;
+                    }
                 }
                 
-                .particles {
+                @keyframes fadeInLogo {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                
+                .simple-particles {
                     position: absolute;
                     width: 100%;
                     height: 100%;
                     z-index: 5;
                 }
                 
-                .particle {
+                .simple-particle {
                     position: absolute;
-                    width: var(--size);
-                    height: var(--size);
-                    background: radial-gradient(circle, var(--color) 0%, transparent 70%);
+                    background: var(--accent-blue);
                     border-radius: 50%;
-                    filter: blur(2px);
                     opacity: 0;
-                    animation: particleOrbit var(--duration) linear infinite 1.5s, fadeInParticle 0.8s ease-out calc(1s + var(--particle-delay)) forwards;
-                    transform-origin: var(--origin-x) var(--origin-y);
+                    animation: particleFloat linear infinite;
                 }
                 
-                .energy-ring {
-                    position: absolute;
-                    width: 500px;
-                    height: 500px;
-                    border: 2px solid transparent;
-                    border-radius: 50%;
-                    z-index: 6;
-                    opacity: 0;
-                    animation: ringRotate 20s linear infinite 1.5s, fadeInRing 1s ease-out 1.1s forwards;
+                .simple-particle:nth-child(2n) {
+                    background: var(--accent-purple);
                 }
                 
-                .ring-segment {
-                    position: absolute;
-                    width: 100%;
-                    height: 100%;
-                    border-radius: 50%;
-                    border: 2px solid transparent;
-                    border-top-color: var(--color);
-                    border-right-color: var(--color);
-                    filter: drop-shadow(0 0 10px var(--color));
-                    opacity: 0;
-                    animation: ringSegmentPulse 4s ease-in-out infinite 1.5s, fadeInSegment 0.8s ease-out calc(1.1s + var(--segment-delay)) forwards;
+                .simple-particle:nth-child(3n) {
+                    background: var(--accent-cyan);
+                }
+                
+                .simple-particle:nth-child(4n) {
+                    background: var(--accent-pink);
+                }
+                
+                @keyframes particleFloat {
+                    0% {
+                        transform: translateY(100vh) translateX(0);
+                        opacity: 0;
+                    }
+                    10% {
+                        opacity: 0.7;
+                    }
+                    90% {
+                        opacity: 0.7;
+                    }
+                    100% {
+                        transform: translateY(-100px) translateX(20px);
+                        opacity: 0;
+                    }
                 }
                 
                 .loading-container {
                     position: absolute;
-                    bottom: 100px;
+                    bottom: 15%;
                     left: 0;
                     right: 0;
                     display: flex;
@@ -502,11 +485,16 @@ function createSplashWindow() {
                     align-items: center;
                     z-index: 10;
                     opacity: 0;
-                    animation: fadeInLoading 1s ease-out 1.5s forwards;
+                    animation: fadeInLoading 0.8s ease-out 1s forwards;
+                }
+                
+                @keyframes fadeInLoading {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
                 
                 .loading-bar {
-                    width: 400px;
+                    width: min(400px, 80vw);
                     height: 6px;
                     background: rgba(255, 255, 255, 0.1);
                     border-radius: 3px;
@@ -529,167 +517,9 @@ function createSplashWindow() {
                     border-radius: 3px;
                     opacity: 0;
                     box-shadow: 0 0 15px rgba(0, 224, 255, 0.5);
-                    animation: loading 2.5s ease-in-out 1.8s forwards, fadeInProgress 0.5s ease-out 1.8s forwards;
-                }
-                
-                @keyframes fadeInUniverse {
-                    from { opacity: 0; }
-                    to { opacity: 0.5; }
-                }
-                
-                @keyframes fadeInStars {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                
-                @keyframes fadeInStar {
-                    from { opacity: 0; }
-                    to { opacity: 0.3; }
-                }
-                
-                @keyframes fadeInNebula {
-                    from { opacity: 0; }
-                    to { opacity: 0.4; }
-                }
-                
-                @keyframes fadeInNebulaLayer {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                
-                @keyframes fadeInLogoContainer {
-                    from { 
-                        opacity: 0;
-                        transform: translate(-50%, -50%) scale(0.8);
-                    }
-                    to { 
-                        opacity: 1;
-                        transform: translate(-50%, -50%) scale(1);
-                    }
-                }
-                
-                @keyframes fadeInLogo {
-                    from { opacity: 0; transform: translateY(20px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                
-                @keyframes fadeInGlow {
-                    from { opacity: 0; filter: blur(60px) brightness(0.5); }
-                    to { opacity: 0.7; filter: blur(60px) brightness(1); }
-                }
-                
-                @keyframes fadeInParticle {
-                    from { opacity: 0; transform: scale(0.5); }
-                    to { opacity: 1; transform: scale(1); }
-                }
-                
-                @keyframes fadeInRing {
-                    from { opacity: 0; transform: scale(0.8) rotate(0deg); }
-                    to { opacity: 1; transform: scale(1) rotate(0deg); }
-                }
-                
-                @keyframes fadeInSegment {
-                    from { opacity: 0; transform: scale(0.5); }
-                    to { opacity: 0.3; transform: scale(1); }
-                }
-                
-                @keyframes fadeInLoading {
-                    from { opacity: 0; transform: translateY(20px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                
-                @keyframes fadeInProgress {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                
-                @keyframes universePulse {
-                    0%, 100% {
-                        opacity: 0.5;
-                        transform: scale(1);
-                    }
-                    50% {
-                        opacity: 0.8;
-                        transform: scale(1.05);
-                    }
-                }
-                
-                @keyframes twinkle {
-                    0%, 100% {
-                        opacity: 0.3;
-                        transform: scale(1);
-                    }
-                    50% {
-                        opacity: 1;
-                        transform: scale(1.2);
-                    }
-                }
-                
-                @keyframes nebulaFloat {
-                    0% {
-                        transform: translate(0, 0) rotate(0deg);
-                    }
-                    100% {
-                        transform: translate(var(--move-x), var(--move-y)) rotate(360deg);
-                    }
-                }
-                
-                @keyframes gradientShift {
-                    0%, 100% {
-                        background-position: 0% 50%;
-                    }
-                    50% {
-                        background-position: 100% 50%;
-                    }
-                }
-                
-                @keyframes logoFloat {
-                    0%, 100% {
-                        transform: translateY(0) scale(1);
-                    }
-                    50% {
-                        transform: translateY(-20px) scale(1.05);
-                    }
-                }
-                
-                @keyframes glowPulse {
-                    0%, 100% {
-                        opacity: 0.5;
-                        filter: blur(60px);
-                    }
-                    50% {
-                        opacity: 0.8;
-                        filter: blur(80px);
-                    }
-                }
-                
-                @keyframes particleOrbit {
-                    0% {
-                        transform: rotate(0deg) translateX(var(--radius)) rotate(0deg);
-                    }
-                    100% {
-                        transform: rotate(360deg) translateX(var(--radius)) rotate(-360deg);
-                    }
-                }
-                
-                @keyframes ringRotate {
-                    0% {
-                        transform: rotate(0deg);
-                    }
-                    100% {
-                        transform: rotate(360deg);
-                    }
-                }
-                
-                @keyframes ringSegmentPulse {
-                    0%, 100% {
-                        opacity: 0.3;
-                        transform: scale(1);
-                    }
-                    50% {
-                        opacity: 0.8;
-                        transform: scale(1.1);
-                    }
+                    animation: 
+                        loading 2s ease-in-out 1.3s forwards,
+                        fadeInProgress 0.5s ease-out 1.3s forwards;
                 }
                 
                 @keyframes loading {
@@ -697,11 +527,16 @@ function createSplashWindow() {
                         width: 0%;
                     }
                     70% {
-                        width: 90%;
+                        width: 95%;
                     }
                     100% {
                         width: 100%;
                     }
+                }
+                
+                @keyframes fadeInProgress {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
                 }
                 
                 @keyframes fadeOut {
@@ -715,20 +550,11 @@ function createSplashWindow() {
             </style>
         </head>
         <body>
-            <div class="universe"></div>
-            <div class="stars" id="stars"></div>
-            <div class="nebula" id="nebula"></div>
+            <div class="background-container"></div>
+            <div class="simple-particles" id="simple-particles"></div>
             
             <div class="logo-container">
-                <div class="logo-glow"></div>
                 <div class="logo-text">NURO</div>
-                <div class="energy-ring">
-                    <div class="ring-segment" style="--color: var(--accent-blue); --segment-delay: 0s;"></div>
-                    <div class="ring-segment" style="--color: var(--accent-purple); transform: rotate(45deg); --segment-delay: 0.1s;"></div>
-                    <div class="ring-segment" style="--color: var(--accent-cyan); transform: rotate(90deg); --segment-delay: 0.2s;"></div>
-                    <div class="ring-segment" style="--color: var(--accent-pink); transform: rotate(135deg); --segment-delay: 0.3s;"></div>
-                </div>
-                <div class="particles" id="particles"></div>
             </div>
             
             <div class="loading-container">
@@ -738,68 +564,25 @@ function createSplashWindow() {
             </div>
             
             <script>
-                const starsContainer = document.getElementById('stars');
-                const nebulaContainer = document.getElementById('nebula');
-                const particlesContainer = document.getElementById('particles');
+                const particlesContainer = document.getElementById('simple-particles');
                 
-                for (let i = 0; i < 200; i++) {
-                    const star = document.createElement('div');
-                    star.className = 'star';
-                    star.style.left = Math.random() * 100 + '%';
-                    star.style.top = Math.random() * 100 + '%';
-                    star.style.width = Math.random() * 3 + 1 + 'px';
-                    star.style.height = star.style.width;
-                    star.style.setProperty('--duration', Math.random() * 5 + 3 + 's');
-                    star.style.setProperty('--delay', Math.random() * 0.5 + 's');
-                    starsContainer.appendChild(star);
-                }
-                
-                const nebulaColors = [
-                    'rgba(0, 102, 255, 0.3)',
-                    'rgba(157, 0, 255, 0.3)',
-                    'rgba(0, 224, 255, 0.3)',
-                    'rgba(255, 0, 204, 0.3)'
-                ];
-                
-                for (let i = 0; i < 4; i++) {
-                    const nebulaLayer = document.createElement('div');
-                    nebulaLayer.className = 'nebula-layer';
-                    nebulaLayer.style.setProperty('--x', Math.random() * 100 + '%');
-                    nebulaLayer.style.setProperty('--y', Math.random() * 100 + '%');
-                    nebulaLayer.style.setProperty('--color', nebulaColors[i]);
-                    nebulaLayer.style.setProperty('--duration', Math.random() * 40 + 20 + 's');
-                    nebulaLayer.style.setProperty('--move-x', Math.random() * 100 - 50 + '%');
-                    nebulaLayer.style.setProperty('--move-y', Math.random() * 100 - 50 + '%');
-                    nebulaLayer.style.setProperty('--layer-delay', Math.random() * 0.3 + 's');
-                    nebulaContainer.appendChild(nebulaLayer);
-                }
-                
-                const particleColors = [
-                    'var(--accent-blue)',
-                    'var(--accent-purple)',
-                    'var(--accent-cyan)',
-                    'var(--accent-pink)'
-                ];
-                
-                for (let i = 0; i < 60; i++) {
+                for (let i = 0; i < 25; i++) {
                     const particle = document.createElement('div');
-                    particle.className = 'particle';
-                    particle.style.setProperty('--size', Math.random() * 6 + 2 + 'px');
-                    particle.style.setProperty('--color', particleColors[Math.floor(Math.random() * particleColors.length)]);
-                    particle.style.setProperty('--duration', Math.random() * 20 + 10 + 's');
-                    particle.style.setProperty('--origin-x', Math.random() * 100 + '%');
-                    particle.style.setProperty('--origin-y', Math.random() * 100 + '%');
-                    particle.style.setProperty('--radius', Math.random() * 200 + 100 + 'px');
-                    particle.style.setProperty('--particle-delay', Math.random() * 0.5 + 's');
+                    particle.className = 'simple-particle';
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.width = Math.random() * 3 + 1 + 'px';
+                    particle.style.height = particle.style.width;
+                    particle.style.animationDuration = Math.random() * 2 + 3 + 's';
+                    particle.style.animationDelay = Math.random() * 2 + 's';
                     particlesContainer.appendChild(particle);
                 }
                 
                 setTimeout(() => {
-                    document.body.style.animation = 'fadeOut 1.5s ease forwards';
+                    document.body.style.animation = 'fadeOut 0.8s ease forwards';
                     setTimeout(() => {
                         window.close();
-                    }, 1500);
-                }, 4000);
+                    }, 800);
+                }, 3000);
             </script>
         </body>
         </html>
