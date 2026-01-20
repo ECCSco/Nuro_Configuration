@@ -304,7 +304,7 @@ function createSplashWindow() {
     splashWindow.setAlwaysOnTop(true, 'screen-saver');
     splashWindow.setVisibleOnAllWorkspaces(true);
     
-    const splashHTML = `
+   const splashHTML = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -329,21 +329,14 @@ function createSplashWindow() {
                     -webkit-font-smoothing: antialiased;
                 }
                 
-                html, body {
-                    width: 100%;
-                    height: 100%;
-                    overflow: hidden;
-                }
-                
                 body {
                     width: 100vw;
                     height: 100vh;
-                    background: #000000;
+                    background: transparent;
                     display: flex;
                     justify-content: center;
                     align-items: center;
-                    margin: 0;
-                    padding: 0;
+                    overflow: hidden;
                 }
                 
                 .splash-container {
@@ -359,8 +352,8 @@ function createSplashWindow() {
                 
                 .gradient-background {
                     position: absolute;
-                    width: 100%;
-                    height: 100%;
+                    width: 200%;
+                    height: 200%;
                     background: linear-gradient(
                         45deg,
                         #000000,
@@ -570,7 +563,7 @@ function createSplashWindow() {
                 const particlesContainer = document.getElementById('particles');
                 const beamsContainer = document.getElementById('beams');
                 
-                for (let i = 0; i < 30; i++) {
+                for (let i = 0; i < 80; i++) {
                     const particle = document.createElement('div');
                     particle.className = 'particle';
                     particle.style.left = Math.random() * 100 + '%';
@@ -581,7 +574,7 @@ function createSplashWindow() {
                     particlesContainer.appendChild(particle);
                 }
                 
-                for (let i = 0; i < 4; i++) {
+                for (let i = 0; i < 8; i++) {
                     const beam = document.createElement('div');
                     beam.className = 'beam';
                     beam.style.left = Math.random() * 100 + '%';
@@ -594,7 +587,7 @@ function createSplashWindow() {
                     setTimeout(() => {
                         window.close();
                     }, 1500);
-                }, 3500);
+                }, 4500);
             </script>
         </body>
         </html>
