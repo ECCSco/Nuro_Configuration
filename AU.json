@@ -473,23 +473,41 @@ function createSplashWindow() {
                     animation: ringSegmentPulse 4s ease-in-out infinite;
                 }
                 
-                .loading-bar {
+                .loading-container {
                     position: absolute;
                     bottom: 100px;
-                    width: 300px;
-                    height: 4px;
-                    background: rgba(255, 255, 255, 0.1);
-                    border-radius: 2px;
-                    overflow: hidden;
+                    left: 0;
+                    right: 0;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
                     z-index: 10;
                 }
                 
+                .loading-bar {
+                    width: 400px;
+                    height: 6px;
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 3px;
+                    overflow: hidden;
+                    position: relative;
+                    box-shadow: 0 0 20px rgba(0, 102, 255, 0.3);
+                }
+                
                 .loading-progress {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
                     width: 0%;
                     height: 100%;
-                    background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple), var(--accent-cyan));
-                    border-radius: 2px;
+                    background: linear-gradient(90deg, 
+                        var(--accent-blue) 0%, 
+                        var(--accent-purple) 33%, 
+                        var(--accent-cyan) 66%, 
+                        var(--accent-pink) 100%);
+                    border-radius: 3px;
                     animation: loading 3.5s ease-in-out forwards;
+                    box-shadow: 0 0 15px rgba(0, 224, 255, 0.5);
                 }
                 
                 @keyframes universePulse {
@@ -618,6 +636,9 @@ function createSplashWindow() {
                     <div class="ring-segment" style="--color: var(--accent-pink); transform: rotate(135deg);"></div>
                 </div>
                 <div class="particles" id="particles"></div>
+            </div>
+            
+            <div class="loading-container">
                 <div class="loading-bar">
                     <div class="loading-progress"></div>
                 </div>
