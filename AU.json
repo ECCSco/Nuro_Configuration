@@ -7,6 +7,7 @@ let tray;
 let splashWindow;
 let config = {};
 let notificationWindows = [];
+let trayMenuWindow;
 let fullscreenCheckInterval;
 
 app.name = 'Nuro';
@@ -273,16 +274,17 @@ function showSystemNotification(title, message) {
 
 function createSplashWindow() {
     const primaryDisplay = screen.getPrimaryDisplay();
-    const { workArea } = primaryDisplay;
+    const { bounds } = primaryDisplay;
     
     splashWindow = new BrowserWindow({
-        width: workArea.width,
-        height: workArea.height,
-        x: workArea.x,
-        y: workArea.y,
+        width: bounds.width,
+        height: bounds.height,
+        x: bounds.x,
+        y: bounds.y,
         frame: false,
         transparent: true,
         alwaysOnTop: true,
+        fullscreen: true,
         skipTaskbar: true,
         resizable: false,
         movable: false,
@@ -296,6 +298,9 @@ function createSplashWindow() {
             contextIsolation: false
         }
     });
+    
+    splashWindow.setAlwaysOnTop(true, 'screen-saver');
+    splashWindow.setVisibleOnAllWorkspaces(true);
     
     const splashHTML = `
         <!DOCTYPE html>
@@ -680,12 +685,11 @@ function toggleWindow() {
 function bringToFront() {
     if (win && !win.isDestroyed() && win.isVisible()) {
         win.setAlwaysOnTop(true, 'screen-saver');
+        win.setVisibleOnAllWorkspaces(true);
         setTimeout(() => {
             if (win && !win.isDestroyed()) {
                 win.focus();
                 win.moveTop();
-                win.setAlwaysOnTop(true, 'screen-saver');
-                win.setVisibleOnAllWorkspaces(true);
             }
         }, 100);
     }
@@ -780,6 +784,65 @@ function checkFullscreenWindows() {
         win.setVisibleOnAllWorkspaces(true);
         win.moveTop();
     }
+}
+
+function createTrayMenuWindow() {
+    if (trayMenuWindow && !trayMenuWindow.isDestroyed()) {
+        return trayMenuWindow;
+    }
+    
+    trayMenuWindow = new BrowserWindow({
+        width: 1,
+        height: 1,
+        x: -100,
+        y: -100,
+        frame: false,
+        transparent: true,
+        alwaysOnTop: true,
+        skipTaskbar: true,
+        resizable: false,
+        movable: false,
+        minimizable: false,
+        maximizable: false,
+        fullscreenable: false,
+        show: false,
+        focusable: false,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true
+        }
+    });
+    
+    trayMenuWindow.loadURL('data:text/html,<html><body></body></html>');
+    
+    trayMenuWindow.on('closed', () => {
+        trayMenuWindow = null;
+    });
+    
+    return trayMenuWindow;
+}
+
+function showTrayMenu() {
+    const menuWindow = createTrayMenuWindow();
+    
+    const cursorPosition = screen.getCursorScreenPoint();
+    
+    menuWindow.setPosition(cursorPosition.x, cursorPosition.y);
+    menuWindow.show();
+    
+    const contextMenu = Menu.buildFromTemplate(getTrayMenuTemplate());
+    
+    contextMenu.popup({
+        window: menuWindow,
+        x: 0,
+        y: 0
+    });
+    
+    contextMenu.once('menu-will-close', () => {
+        if (menuWindow && !menuWindow.isDestroyed()) {
+            menuWindow.hide();
+        }
+    });
 }
 
 async function createWindow() {
@@ -963,22 +1026,12 @@ function createTray() {
     });
 
     tray.on('right-click', () => {
-        if (win && !win.isDestroyed() && win.isVisible() && config.alwaysOnTop) {
-            win.setAlwaysOnTop(false);
-        }
-        tray.popUpContextMenu();
-        setTimeout(() => {
-            if (win && !win.isDestroyed() && win.isVisible() && config.alwaysOnTop) {
-                win.setAlwaysOnTop(true, 'screen-saver');
-                win.setVisibleOnAllWorkspaces(true);
-                win.moveTop();
-            }
-        }, 300);
+        showTrayMenu();
     });
 }
 
-function updateTrayMenu() {
-    const contextMenu = Menu.buildFromTemplate([
+function getTrayMenuTemplate() {
+    return [
         {
             label: 'Запускать при запуске системы',
             type: 'checkbox',
@@ -1046,12 +1099,6 @@ function updateTrayMenu() {
         },
         { type: 'separator' },
         {
-            label: 'Поверх всего',
-            click: () => {
-                bringToFront();
-            }
-        },
-        {
             label: 'Проверить обновления',
             click: () => {
                 checkForUpdates();
@@ -1072,8 +1119,11 @@ function updateTrayMenu() {
                 app.quit();
             }
         }
-    ]);
+    ];
+}
 
+function updateTrayMenu() {
+    const contextMenu = Menu.buildFromTemplate(getTrayMenuTemplate());
     tray.setContextMenu(contextMenu);
 }
 
@@ -1132,4 +1182,7 @@ app.on('before-quit', () => {
             win.close();
         }
     });
+    if (trayMenuWindow && !trayMenuWindow.isDestroyed()) {
+        trayMenuWindow.close();
+    }
 });
