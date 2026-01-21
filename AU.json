@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage, ipcMain } = require('electron');
+const { app, BrowserWindow, Tray, Menu, screen, net, dialog, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -439,12 +439,10 @@ function createIconTransitionWindow() {
             <script>
                 window.startMoveAnimation = function(targetX, targetY, targetWidth, targetHeight) {
                     const iconWrapper = document.querySelector('.icon-wrapper');
-                    const body = document.body;
                     
                     const targetCenterX = targetX + targetWidth / 2;
                     const targetCenterY = targetY + targetHeight / 2;
                     
-                    const iconRect = iconWrapper.getBoundingClientRect();
                     const targetXPos = targetCenterX - 90;
                     const targetYPos = targetCenterY - 90;
                     
@@ -514,56 +512,6 @@ function createSplashWindow() {
         console.error('Error loading icon:', error);
     }
     
-    const particlesHTML = Array.from({length: 150}).map((_, i) => {
-        const size = Math.random() * 5 + 1;
-        const delay = Math.random() * 2;
-        const duration = 15 + Math.random() * 15;
-        const angle = Math.random() * 360;
-        const distance = 100 + Math.random() * 300;
-        const colorIndex = Math.floor(Math.random() * 3);
-        const colors = ['#64b5f6', '#ffb74d', '#ffffff'];
-        
-        return `
-            <div class="particle" style="
-                --delay: ${delay}s;
-                --duration: ${duration}s;
-                --angle: ${angle}deg;
-                --distance: ${distance}px;
-                --color: ${colors[colorIndex]};
-                width: ${size}px;
-                height: ${size}px;
-                opacity: ${0.1 + Math.random() * 0.3};
-            "></div>
-        `;
-    }).join('');
-    
-    const floatingOrbsHTML = Array.from({length: 20}).map((_, i) => {
-        const size = 10 + Math.random() * 30;
-        const delay = Math.random() * 5;
-        const duration = 20 + Math.random() * 20;
-        const startX = Math.random() * 100;
-        const startY = Math.random() * 100;
-        const endX = Math.random() * 100;
-        const endY = Math.random() * 100;
-        const colorIndex = Math.floor(Math.random() * 2);
-        const colors = ['#64b5f6', '#ffb74d'];
-        
-        return `
-            <div class="floating-orb" style="
-                --delay: ${delay}s;
-                --duration: ${duration}s;
-                --start-x: ${startX}%;
-                --start-y: ${startY}%;
-                --end-x: ${endX}%;
-                --end-y: ${endY}%;
-                --color: ${colors[colorIndex]};
-                width: ${size}px;
-                height: ${size}px;
-                opacity: ${0.05 + Math.random() * 0.1};
-            "></div>
-        `;
-    }).join('');
-    
     const splashHTML = `
         <!DOCTYPE html>
         <html>
@@ -578,6 +526,8 @@ function createSplashWindow() {
                     --accent-orange: #ffb74d;
                     --accent-blue-light: #90caf9;
                     --accent-orange-light: #ffcc80;
+                    --accent-blue-glow: rgba(100, 181, 246, 0.7);
+                    --accent-orange-glow: rgba(255, 183, 77, 0.7);
                     --text-primary: #ffffff;
                     --text-secondary: #9e9e9e;
                     --border-radius: 25px;
@@ -604,38 +554,67 @@ function createSplashWindow() {
                 }
                 
                 html, body {
+                    width: 100%;
                     height: 100%;
                     overflow: hidden;
+                    background: transparent;
                 }
                 
                 body {
-                    width: 100vw;
-                    height: 100vh;
-                    background: linear-gradient(135deg, #000000 0%, #0a0a0a 50%, #111111 100%);
+                    width: 100%;
+                    height: 100%;
+                    background: radial-gradient(ellipse at center, 
+                        #000000 0%, 
+                        #0a0a0a 25%, 
+                        #111111 50%, 
+                        #0a0a0a 75%, 
+                        #000000 100%);
                     overflow: hidden;
                     position: relative;
-                    min-height: 100vh;
                     display: flex;
                     justify-content: center;
                     align-items: center;
+                    margin: 0;
                     padding: 0;
-                    position: relative;
-                    height: 100%;
                 }
                 
-                .cosmic-background {
+                .nebula-background {
                     position: absolute;
                     top: 0;
                     left: 0;
                     width: 100%;
                     height: 100%;
                     background: 
-                        radial-gradient(circle at 20% 80%, rgba(100, 181, 246, 0.25) 0%, transparent 70%),
-                        radial-gradient(circle at 80% 20%, rgba(255, 183, 77, 0.25) 0%, transparent 70%),
-                        radial-gradient(circle at 40% 40%, rgba(144, 202, 249, 0.15) 0%, transparent 60%),
-                        radial-gradient(circle at 60% 60%, rgba(255, 204, 128, 0.15) 0%, transparent 60%);
+                        radial-gradient(circle at 20% 80%, var(--accent-blue-glow) 0%, transparent 60%),
+                        radial-gradient(circle at 80% 20%, var(--accent-orange-glow) 0%, transparent 60%),
+                        radial-gradient(circle at 40% 40%, rgba(144, 202, 249, 0.4) 0%, transparent 70%),
+                        radial-gradient(circle at 60% 60%, rgba(255, 204, 128, 0.4) 0%, transparent 70%);
                     opacity: 0;
-                    animation: cosmicPulse 8s ease-in-out infinite alternate, fadeIn 1.5s ease-out forwards;
+                    animation: nebulaFloat 20s ease-in-out infinite alternate, fadeIn 2s ease-out forwards;
+                }
+                
+                .light-rays {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: 
+                        repeating-conic-gradient(
+                            from 0deg at 50% 50%,
+                            transparent 0deg,
+                            rgba(100, 181, 246, 0.03) 2deg,
+                            transparent 4deg
+                        ),
+                        repeating-conic-gradient(
+                            from 30deg at 50% 50%,
+                            transparent 0deg,
+                            rgba(255, 183, 77, 0.03) 2deg,
+                            transparent 4deg
+                        );
+                    opacity: 0;
+                    animation: rotateRays 40s linear infinite, fadeInRays 3s ease-out 0.5s forwards;
+                    filter: blur(1px);
                 }
                 
                 .particles-container {
@@ -649,32 +628,73 @@ function createSplashWindow() {
                 
                 .particle {
                     position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    border-radius: 50%;
+                    width: 4px;
+                    height: 4px;
                     background: var(--color);
-                    filter: blur(1px);
-                    transform-origin: center;
-                    animation: particleOrbit var(--duration) linear var(--delay) infinite;
-                    box-shadow: 0 0 10px var(--color);
+                    border-radius: 50%;
+                    filter: blur(0.5px);
+                    opacity: var(--opacity);
+                    animation: floatParticle var(--duration) ease-in-out var(--delay) infinite;
                 }
                 
-                .floating-orbs-container {
+                .energy-rings {
                     position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    width: 800px;
+                    height: 800px;
                     pointer-events: none;
                 }
                 
-                .floating-orb {
+                .ring {
                     position: absolute;
+                    top: 50%;
+                    left: 50%;
                     border-radius: 50%;
-                    background: radial-gradient(circle at 30% 30%, var(--color), transparent);
-                    filter: blur(8px);
-                    animation: floatOrb var(--duration) ease-in-out var(--delay) infinite alternate;
-                    box-shadow: 0 0 40px var(--color), 0 0 80px var(--color);
+                    border: 2px solid transparent;
+                    transform: translate(-50%, -50%);
+                    opacity: 0;
+                }
+                
+                .ring-1 {
+                    width: 600px;
+                    height: 600px;
+                    border-top-color: var(--accent-blue);
+                    border-bottom-color: var(--accent-blue);
+                    animation: ringRotate 25s linear infinite, ringPulse 4s ease-in-out infinite, fadeInRing 1.5s ease-out 0.5s forwards;
+                    filter: drop-shadow(0 0 10px var(--accent-blue));
+                }
+                
+                .ring-2 {
+                    width: 700px;
+                    height: 700px;
+                    border-left-color: var(--accent-orange);
+                    border-right-color: var(--accent-orange);
+                    animation: ringRotateReverse 30s linear infinite, ringPulse 5s ease-in-out infinite alternate, fadeInRing 1.5s ease-out 0.7s forwards;
+                    filter: drop-shadow(0 0 10px var(--accent-orange));
+                }
+                
+                .ring-3 {
+                    width: 800px;
+                    height: 800px;
+                    border-top-color: var(--accent-blue-light);
+                    border-bottom-color: var(--accent-blue-light);
+                    animation: ringRotate 35s linear infinite, ringPulse 6s ease-in-out infinite, fadeInRing 1.5s ease-out 0.9s forwards;
+                    filter: drop-shadow(0 0 15px var(--accent-blue-light));
+                }
+                
+                .pulse-ring {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    width: 500px;
+                    height: 500px;
+                    border-radius: 50%;
+                    border: 1px solid var(--accent-blue);
+                    transform: translate(-50%, -50%);
+                    opacity: 0;
+                    animation: pulseWave 3s ease-out infinite, fadeInRing 1s ease-out 1s forwards;
                 }
                 
                 .logo-container {
@@ -691,8 +711,8 @@ function createSplashWindow() {
                 
                 .logo-wrapper {
                     position: relative;
-                    width: 220px;
-                    height: 220px;
+                    width: 240px;
+                    height: 240px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -702,32 +722,32 @@ function createSplashWindow() {
                     width: 100%;
                     height: 100%;
                     opacity: 0;
-                    animation: fadeInLogo 1.2s ease-out 0.3s forwards, logoFloat 6s ease-in-out infinite, logoPulse 4s ease-in-out infinite;
+                    animation: logoReveal 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.5s forwards;
                     filter: 
-                        drop-shadow(0 0 40px rgba(100, 181, 246, 0.8))
-                        drop-shadow(0 0 80px rgba(100, 181, 246, 0.6))
-                        drop-shadow(0 0 120px rgba(100, 181, 246, 0.4));
+                        drop-shadow(0 0 40px var(--accent-blue-glow))
+                        drop-shadow(0 0 80px var(--accent-blue-glow))
+                        drop-shadow(0 0 120px var(--accent-blue-glow));
                     z-index: 15;
                     position: relative;
                 }
                 
                 .logo-glow {
                     position: absolute;
-                    width: 150%;
-                    height: 150%;
+                    width: 160%;
+                    height: 160%;
                     background: radial-gradient(circle, 
-                        rgba(100, 181, 246, 0.8) 0%,
-                        rgba(255, 183, 77, 0.6) 30%,
+                        var(--accent-blue-glow) 0%,
+                        var(--accent-orange-glow) 30%,
                         transparent 70%);
-                    filter: blur(40px);
+                    filter: blur(50px);
                     opacity: 0;
                     z-index: 10;
-                    animation: glowPulse 3s ease-in-out infinite, fadeInGlow 1.5s ease-out 0.2s forwards;
+                    animation: glowExpand 2s ease-out 0.8s forwards, glowPulse 4s ease-in-out infinite;
                 }
                 
                 .logo-text {
-                    font-size: 48px;
-                    font-weight: 800;
+                    font-size: 56px;
+                    font-weight: 900;
                     background: linear-gradient(
                         135deg,
                         var(--accent-blue-light) 0%,
@@ -740,106 +760,27 @@ function createSplashWindow() {
                     -webkit-background-clip: text;
                     background-clip: text;
                     color: transparent;
-                    letter-spacing: 3px;
+                    letter-spacing: 4px;
                     text-transform: uppercase;
                     position: relative;
                     text-align: center;
                     line-height: 1;
                     opacity: 0;
-                    margin-top: 30px;
+                    margin-top: 40px;
                     animation: 
-                        gradientShift 8s ease infinite, 
-                        fadeInText 1.5s ease-out 0.6s forwards,
+                        gradientFlow 8s linear infinite, 
+                        textReveal 1.2s ease-out 1s forwards,
                         textGlow 3s ease-in-out infinite;
                     text-shadow: 
-                        0 0 20px rgba(100, 181, 246, 0.5),
-                        0 0 40px rgba(100, 181, 246, 0.3);
+                        0 0 30px rgba(100, 181, 246, 0.6),
+                        0 0 60px rgba(100, 181, 246, 0.4),
+                        0 0 90px rgba(100, 181, 246, 0.2);
                     z-index: 15;
-                }
-                
-                .energy-system {
-                    position: absolute;
-                    width: 100%;
-                    height: 100%;
-                    pointer-events: none;
-                }
-                
-                .energy-ring {
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    border-radius: 50%;
-                    border: 1px solid transparent;
-                    animation: ringRotate 20s linear infinite;
-                    opacity: 0;
-                    animation-fill-mode: forwards;
-                }
-                
-                .ring-1 {
-                    width: 600px;
-                    height: 600px;
-                    border-top-color: var(--accent-blue);
-                    border-right-color: var(--accent-blue);
-                    animation-delay: 0.4s;
-                    animation-duration: 25s;
-                    filter: drop-shadow(0 0 15px var(--accent-blue));
-                    animation-name: ringRotate, fadeInRing;
-                    animation-duration: 25s, 1s;
-                }
-                
-                .ring-2 {
-                    width: 700px;
-                    height: 700px;
-                    border-top-color: var(--accent-orange);
-                    border-right-color: var(--accent-orange);
-                    animation-delay: 0.6s;
-                    animation-duration: 30s;
-                    animation-direction: reverse;
-                    filter: drop-shadow(0 0 15px var(--accent-orange));
-                    animation-name: ringRotateReverse, fadeInRing;
-                    animation-duration: 30s, 1s;
-                }
-                
-                .ring-3 {
-                    width: 800px;
-                    height: 800px;
-                    border-top-color: var(--accent-blue-light);
-                    border-right-color: var(--accent-blue-light);
-                    animation-delay: 0.8s;
-                    animation-duration: 35s;
-                    filter: drop-shadow(0 0 20px var(--accent-blue-light));
-                    animation-name: ringRotate, fadeInRing;
-                    animation-duration: 35s, 1s;
-                }
-                
-                .ring-pulse {
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    width: 500px;
-                    height: 500px;
-                    border-radius: 50%;
-                    transform: translate(-50%, -50%);
-                    border: 2px solid var(--accent-blue);
-                    opacity: 0;
-                    animation: ringPulse 4s ease-out infinite;
-                    z-index: 5;
-                }
-                
-                .sparkle {
-                    position: absolute;
-                    width: 4px;
-                    height: 4px;
-                    background: white;
-                    border-radius: 50%;
-                    filter: blur(1px);
-                    animation: sparkleTwinkle 2s ease-in-out infinite;
                 }
                 
                 .loading-container {
                     position: absolute;
-                    bottom: 120px;
+                    bottom: 140px;
                     left: 0;
                     right: 0;
                     display: flex;
@@ -848,19 +789,20 @@ function createSplashWindow() {
                     align-items: center;
                     z-index: 20;
                     opacity: 0;
-                    animation: fadeInLoading 1.5s ease-out 0.7s forwards;
+                    animation: slideUpFade 1.2s ease-out 1.2s forwards;
                 }
                 
-                .loading-bar {
-                    width: 500px;
-                    height: 8px;
-                    background: rgba(255, 255, 255, 0.1);
-                    border-radius: 4px;
+                .loading-bar-wrapper {
+                    width: 600px;
+                    height: 12px;
+                    background: rgba(255, 255, 255, 0.05);
+                    border-radius: 6px;
                     overflow: hidden;
                     position: relative;
                     box-shadow: 
-                        inset 0 0 10px rgba(0, 0, 0, 0.5),
-                        0 0 30px rgba(100, 181, 246, 0.4);
+                        inset 0 0 15px rgba(0, 0, 0, 0.6),
+                        0 0 40px rgba(100, 181, 246, 0.3);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
                 }
                 
                 .loading-progress {
@@ -875,36 +817,55 @@ function createSplashWindow() {
                         var(--accent-orange) 50%,
                         var(--accent-orange-light) 75%,
                         var(--accent-blue) 100%);
-                    border-radius: 4px;
+                    border-radius: 6px;
                     opacity: 0;
                     box-shadow: 
-                        0 0 20px rgba(100, 181, 246, 0.6),
-                        0 0 40px rgba(100, 181, 246, 0.4);
-                    animation: loading 2.5s cubic-bezier(0.65, 0, 0.35, 1) 1s forwards, 
-                               fadeInProgress 0.8s ease-out 1s forwards,
+                        0 0 30px rgba(100, 181, 246, 0.7),
+                        0 0 60px rgba(100, 181, 246, 0.5);
+                    animation: loading 2.8s cubic-bezier(0.65, 0, 0.35, 1) 1.5s forwards, 
                                progressGlow 2s ease-in-out infinite;
                 }
                 
                 .loading-text {
-                    margin-top: 20px;
-                    font-size: 16px;
+                    margin-top: 25px;
+                    font-size: 18px;
                     font-weight: 500;
                     color: var(--text-secondary);
-                    letter-spacing: 2px;
+                    letter-spacing: 3px;
                     text-transform: uppercase;
                     opacity: 0;
-                    animation: fadeInText 1s ease-out 1.2s forwards;
-                    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+                    animation: fadeInText 1s ease-out 1.8s forwards;
+                    text-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
                 }
                 
-                @keyframes cosmicPulse {
-                    0% {
-                        opacity: 0.3;
-                        transform: scale(1);
+                .sparkles-container {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    pointer-events: none;
+                }
+                
+                .sparkle {
+                    position: absolute;
+                    width: 3px;
+                    height: 3px;
+                    background: white;
+                    border-radius: 50%;
+                    filter: blur(1px);
+                    opacity: 0;
+                    animation: sparkleTwinkle 3s ease-in-out infinite;
+                }
+                
+                @keyframes nebulaFloat {
+                    0%, 100% {
+                        opacity: 0.4;
+                        transform: scale(1) rotate(0deg);
                     }
-                    100% {
-                        opacity: 0.6;
-                        transform: scale(1.1);
+                    50% {
+                        opacity: 0.7;
+                        transform: scale(1.1) rotate(180deg);
                     }
                 }
                 
@@ -913,122 +874,28 @@ function createSplashWindow() {
                     to { opacity: 1; }
                 }
                 
-                @keyframes particleOrbit {
+                @keyframes rotateRays {
                     0% {
-                        transform: translate(-50%, -50%) rotate(0deg) translateX(var(--distance)) rotate(0deg);
+                        transform: rotate(0deg);
                     }
                     100% {
-                        transform: translate(-50%, -50%) rotate(360deg) translateX(var(--distance)) rotate(-360deg);
+                        transform: rotate(360deg);
                     }
                 }
                 
-                @keyframes floatOrb {
-                    0% {
-                        transform: translate(var(--start-x), var(--start-y));
-                        opacity: 0.1;
-                    }
-                    100% {
-                        transform: translate(var(--end-x), var(--end-y));
-                        opacity: 0.2;
-                    }
-                }
-                
-                @keyframes fadeInLogo {
-                    from { 
-                        opacity: 0; 
-                        transform: translateY(40px) scale(0.8) rotate(-10deg);
-                    }
-                    to { 
-                        opacity: 1; 
-                        transform: translateY(0) scale(1) rotate(0deg);
-                    }
-                }
-                
-                @keyframes logoFloat {
-                    0%, 100% {
-                        transform: translateY(0) scale(1) rotate(0deg);
-                    }
-                    33% {
-                        transform: translateY(-20px) scale(1.05) rotate(2deg);
-                    }
-                    66% {
-                        transform: translateY(10px) scale(0.98) rotate(-1deg);
-                    }
-                }
-                
-                @keyframes logoPulse {
-                    0%, 100% {
-                        filter: 
-                            drop-shadow(0 0 40px rgba(100, 181, 246, 0.8))
-                            drop-shadow(0 0 80px rgba(100, 181, 246, 0.6))
-                            drop-shadow(0 0 120px rgba(100, 181, 246, 0.4));
-                    }
-                    50% {
-                        filter: 
-                            drop-shadow(0 0 60px rgba(100, 181, 246, 1))
-                            drop-shadow(0 0 100px rgba(100, 181, 246, 0.8))
-                            drop-shadow(0 0 140px rgba(100, 181, 246, 0.6));
-                    }
-                }
-                
-                @keyframes fadeInText {
-                    from { 
-                        opacity: 0; 
-                        transform: translateY(20px); 
-                    }
-                    to { 
-                        opacity: 1; 
-                        transform: translateY(0); 
-                    }
-                }
-                
-                @keyframes textGlow {
-                    0%, 100% {
-                        text-shadow: 
-                            0 0 20px rgba(100, 181, 246, 0.5),
-                            0 0 40px rgba(100, 181, 246, 0.3);
-                    }
-                    50% {
-                        text-shadow: 
-                            0 0 30px rgba(100, 181, 246, 0.8),
-                            0 0 60px rgba(100, 181, 246, 0.5),
-                            0 0 90px rgba(100, 181, 246, 0.3);
-                    }
-                }
-                
-                @keyframes gradientShift {
-                    0%, 100% {
-                        background-position: 0% 50%;
-                    }
-                    50% {
-                        background-position: 100% 50%;
-                    }
-                }
-                
-                @keyframes fadeInGlow {
+                @keyframes fadeInRays {
                     from { opacity: 0; }
-                    to { opacity: 0.7; }
+                    to { opacity: 0.2; }
                 }
                 
-                @keyframes glowPulse {
+                @keyframes floatParticle {
                     0%, 100% {
-                        opacity: 0.5;
-                        transform: scale(1);
+                        transform: translate(var(--start-x), var(--start-y));
+                        opacity: var(--opacity);
                     }
                     50% {
-                        opacity: 0.8;
-                        transform: scale(1.1);
-                    }
-                }
-                
-                @keyframes fadeInRing {
-                    from { 
-                        opacity: 0; 
-                        transform: translate(-50%, -50%) scale(0.7); 
-                    }
-                    to { 
-                        opacity: 0.6; 
-                        transform: translate(-50%, -50%) scale(1); 
+                        transform: translate(var(--end-x), var(--end-y));
+                        opacity: calc(var(--opacity) * 1.5);
                     }
                 }
                 
@@ -1051,15 +918,37 @@ function createSplashWindow() {
                 }
                 
                 @keyframes ringPulse {
-                    0% {
-                        opacity: 0;
-                        transform: translate(-50%, -50%) scale(0.8);
+                    0%, 100% {
+                        opacity: 0.3;
                         border-width: 2px;
                     }
                     50% {
-                        opacity: 0.4;
-                        transform: translate(-50%, -50%) scale(1);
+                        opacity: 0.7;
                         border-width: 1px;
+                    }
+                }
+                
+                @keyframes fadeInRing {
+                    from { 
+                        opacity: 0; 
+                        transform: translate(-50%, -50%) scale(0.8); 
+                    }
+                    to { 
+                        opacity: 1; 
+                        transform: translate(-50%, -50%) scale(1); 
+                    }
+                }
+                
+                @keyframes pulseWave {
+                    0% {
+                        opacity: 0;
+                        transform: translate(-50%, -50%) scale(0.8);
+                        border-width: 1px;
+                    }
+                    50% {
+                        opacity: 0.5;
+                        transform: translate(-50%, -50%) scale(1);
+                        border-width: 2px;
                     }
                     100% {
                         opacity: 0;
@@ -1068,21 +957,97 @@ function createSplashWindow() {
                     }
                 }
                 
-                @keyframes sparkleTwinkle {
-                    0%, 100% {
-                        opacity: 0.2;
-                        transform: scale(1);
+                @keyframes logoReveal {
+                    0% {
+                        opacity: 0;
+                        transform: scale(0.5) rotate(-15deg);
+                        filter: 
+                            drop-shadow(0 0 0px var(--accent-blue-glow))
+                            drop-shadow(0 0 0px var(--accent-blue-glow))
+                            drop-shadow(0 0 0px var(--accent-blue-glow));
                     }
-                    50% {
-                        opacity: 0.8;
-                        transform: scale(1.2);
+                    70% {
+                        opacity: 1;
+                        transform: scale(1.1) rotate(5deg);
+                        filter: 
+                            drop-shadow(0 0 50px var(--accent-blue-glow))
+                            drop-shadow(0 0 100px var(--accent-blue-glow))
+                            drop-shadow(0 0 150px var(--accent-blue-glow));
+                    }
+                    100% {
+                        opacity: 1;
+                        transform: scale(1) rotate(0deg);
+                        filter: 
+                            drop-shadow(0 0 40px var(--accent-blue-glow))
+                            drop-shadow(0 0 80px var(--accent-blue-glow))
+                            drop-shadow(0 0 120px var(--accent-blue-glow));
                     }
                 }
                 
-                @keyframes fadeInLoading {
+                @keyframes glowExpand {
+                    from { 
+                        opacity: 0; 
+                        transform: scale(0.5); 
+                    }
+                    to { 
+                        opacity: 0.6; 
+                        transform: scale(1); 
+                    }
+                }
+                
+                @keyframes glowPulse {
+                    0%, 100% {
+                        opacity: 0.4;
+                    }
+                    50% {
+                        opacity: 0.8;
+                    }
+                }
+                
+                @keyframes gradientFlow {
+                    0% {
+                        background-position: 0% 50%;
+                    }
+                    50% {
+                        background-position: 100% 50%;
+                    }
+                    100% {
+                        background-position: 0% 50%;
+                    }
+                }
+                
+                @keyframes textReveal {
                     from { 
                         opacity: 0; 
                         transform: translateY(30px); 
+                        letter-spacing: 10px;
+                    }
+                    to { 
+                        opacity: 1; 
+                        transform: translateY(0); 
+                        letter-spacing: 4px;
+                    }
+                }
+                
+                @keyframes textGlow {
+                    0%, 100% {
+                        text-shadow: 
+                            0 0 30px rgba(100, 181, 246, 0.6),
+                            0 0 60px rgba(100, 181, 246, 0.4),
+                            0 0 90px rgba(100, 181, 246, 0.2);
+                    }
+                    50% {
+                        text-shadow: 
+                            0 0 40px rgba(100, 181, 246, 0.8),
+                            0 0 80px rgba(100, 181, 246, 0.6),
+                            0 0 120px rgba(100, 181, 246, 0.4);
+                    }
+                }
+                
+                @keyframes slideUpFade {
+                    from { 
+                        opacity: 0; 
+                        transform: translateY(50px); 
                     }
                     to { 
                         opacity: 1; 
@@ -1093,37 +1058,53 @@ function createSplashWindow() {
                 @keyframes loading {
                     0% {
                         width: 0%;
+                        opacity: 0;
                     }
                     20% {
                         width: 30%;
+                        opacity: 1;
                     }
                     50% {
                         width: 70%;
+                        opacity: 1;
                     }
                     80% {
                         width: 95%;
+                        opacity: 1;
                     }
                     100% {
                         width: 100%;
+                        opacity: 1;
                     }
-                }
-                
-                @keyframes fadeInProgress {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
                 }
                 
                 @keyframes progressGlow {
                     0%, 100% {
                         box-shadow: 
-                            0 0 20px rgba(100, 181, 246, 0.6),
-                            0 0 40px rgba(100, 181, 246, 0.4);
+                            0 0 30px rgba(100, 181, 246, 0.7),
+                            0 0 60px rgba(100, 181, 246, 0.5);
                     }
                     50% {
                         box-shadow: 
-                            0 0 30px rgba(100, 181, 246, 0.8),
-                            0 0 50px rgba(100, 181, 246, 0.6),
-                            0 0 70px rgba(100, 181, 246, 0.4);
+                            0 0 40px rgba(100, 181, 246, 0.9),
+                            0 0 80px rgba(100, 181, 246, 0.7),
+                            0 0 120px rgba(100, 181, 246, 0.5);
+                    }
+                }
+                
+                @keyframes fadeInText {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                
+                @keyframes sparkleTwinkle {
+                    0%, 100% {
+                        opacity: 0;
+                        transform: scale(1);
+                    }
+                    50% {
+                        opacity: 0.8;
+                        transform: scale(1.3);
                     }
                 }
                 
@@ -1140,21 +1121,14 @@ function createSplashWindow() {
             </style>
         </head>
         <body>
-            <div class="cosmic-background"></div>
+            <div class="nebula-background"></div>
+            <div class="light-rays"></div>
             
-            <div class="particles-container">
-                ${particlesHTML}
-            </div>
-            
-            <div class="floating-orbs-container">
-                ${floatingOrbsHTML}
-            </div>
-            
-            <div class="energy-system">
-                <div class="ring-pulse"></div>
-                <div class="energy-ring ring-1"></div>
-                <div class="energy-ring ring-2"></div>
-                <div class="energy-ring ring-3"></div>
+            <div class="energy-rings">
+                <div class="pulse-ring"></div>
+                <div class="ring ring-1"></div>
+                <div class="ring ring-2"></div>
+                <div class="ring ring-3"></div>
             </div>
             
             <div class="logo-container">
@@ -1166,10 +1140,10 @@ function createSplashWindow() {
             </div>
             
             <div class="loading-container">
-                <div class="loading-bar">
+                <div class="loading-bar-wrapper">
                     <div class="loading-progress"></div>
                 </div>
-                <div class="loading-text">Загрузка Nuro...</div>
+                <div class="loading-text">ИНИЦИАЛИЗАЦИЯ СИСТЕМЫ</div>
             </div>
             
             <script>
@@ -1179,28 +1153,95 @@ function createSplashWindow() {
                     setTimeout(() => {
                         window.close();
                     }, 1500);
-                }, 3500);
+                }, 4000);
                 
                 document.addEventListener('DOMContentLoaded', function() {
-                    const container = document.querySelector('.particles-container');
+                    const particlesContainer = document.querySelector('.particles-container');
+                    const sparklesContainer = document.querySelector('.sparkles-container');
                     
-                    for(let i = 0; i < 20; i++) {
+                    // Создаем оптимизированные частицы (меньше для производительности)
+                    for(let i = 0; i < 80; i++) {
+                        const particle = document.createElement('div');
+                        particle.className = 'particle';
+                        
+                        const startX = Math.random() * 100 + '%';
+                        const startY = Math.random() * 100 + '%';
+                        const endX = Math.random() * 100 + '%';
+                        const endY = Math.random() * 100 + '%';
+                        const duration = 8 + Math.random() * 12 + 's';
+                        const delay = Math.random() * 5 + 's';
+                        const color = Math.random() > 0.5 ? 'var(--accent-blue)' : 'var(--accent-orange)';
+                        const opacity = 0.1 + Math.random() * 0.2;
+                        
+                        particle.style.setProperty('--start-x', startX);
+                        particle.style.setProperty('--start-y', startY);
+                        particle.style.setProperty('--end-x', endX);
+                        particle.style.setProperty('--end-y', endY);
+                        particle.style.setProperty('--duration', duration);
+                        particle.style.setProperty('--delay', delay);
+                        particle.style.setProperty('--color', color);
+                        particle.style.setProperty('--opacity', opacity);
+                        
+                        particlesContainer.appendChild(particle);
+                    }
+                    
+                    // Создаем искры вокруг логотипа
+                    for(let i = 0; i < 30; i++) {
                         const sparkle = document.createElement('div');
                         sparkle.className = 'sparkle';
-                        sparkle.style.left = Math.random() * 100 + '%';
-                        sparkle.style.top = Math.random() * 100 + '%';
-                        sparkle.style.animationDelay = Math.random() * 2 + 's';
-                        container.appendChild(sparkle);
+                        
+                        const angle = Math.random() * 360;
+                        const distance = 120 + Math.random() * 180;
+                        const x = 50 + Math.cos(angle * Math.PI / 180) * distance + '%';
+                        const y = 50 + Math.sin(angle * Math.PI / 180) * distance + '%';
+                        const delay = Math.random() * 3 + 's';
+                        
+                        sparkle.style.left = x;
+                        sparkle.style.top = y;
+                        sparkle.style.animationDelay = delay;
+                        
+                        sparklesContainer.appendChild(sparkle);
                     }
                     
+                    // Анимация пульсации логотипа
                     const logo = document.querySelector('.logo-image') || document.querySelector('.logo-text');
                     if(logo) {
-                        let rotation = 0;
-                        setInterval(() => {
-                            rotation += 0.2;
-                            logo.style.transform = \`rotate(\${rotation}deg) scale(\${1 + Math.sin(Date.now() * 0.001) * 0.05})\`;
-                        }, 16);
+                        let scale = 1;
+                        let direction = 0.001;
+                        
+                        function pulseLogo() {
+                            scale += direction;
+                            if(scale >= 1.03) direction = -0.001;
+                            if(scale <= 0.97) direction = 0.001;
+                            
+                            logo.style.transform = \`scale(\${scale})\`;
+                            requestAnimationFrame(pulseLogo);
+                        }
+                        
+                        setTimeout(() => {
+                            pulseLogo();
+                        }, 2000);
                     }
+                    
+                    // Динамическое обновление прогресса
+                    const loadingProgress = document.querySelector('.loading-progress');
+                    let progress = 0;
+                    
+                    function updateProgress() {
+                        if(progress < 100) {
+                            progress += Math.random() * 2;
+                            if(progress > 100) progress = 100;
+                            loadingProgress.style.width = progress + '%';
+                            
+                            if(progress < 100) {
+                                setTimeout(updateProgress, 20 + Math.random() * 30);
+                            }
+                        }
+                    }
+                    
+                    setTimeout(() => {
+                        updateProgress();
+                    }, 1500);
                 });
             </script>
         </body>
