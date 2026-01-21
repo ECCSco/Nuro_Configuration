@@ -603,35 +603,6 @@ function createSplashWindow() {
                     }
                 }
                 
-                @keyframes fadeInRing {
-                    from { 
-                        opacity: 0; 
-                        transform: translate(-50%, -50%) scale(0.8);
-                    }
-                    to { 
-                        opacity: 0.5; 
-                        transform: translate(-50%, -50%) scale(1);
-                    }
-                }
-                
-                @keyframes ringRotate {
-                    0% {
-                        transform: translate(-50%, -50%) rotate(0deg);
-                    }
-                    100% {
-                        transform: translate(-50%, -50%) rotate(360deg);
-                    }
-                }
-                
-                @keyframes ringRotateReverse {
-                    0% {
-                        transform: translate(-50%, -50%) rotate(360deg);
-                    }
-                    100% {
-                        transform: translate(-50%, -50%) rotate(0deg);
-                    }
-                }
-                
                 @keyframes fadeInLoading {
                     from { 
                         opacity: 0; 
@@ -682,6 +653,21 @@ function createSplashWindow() {
                 @keyframes fadeInProgress {
                     from { opacity: 0; }
                     to { opacity: 1; }
+                }
+
+                @keyframes epicZoom {
+                    0% {
+                        transform: scale(1);
+                        opacity: 1;
+                    }
+                    50% {
+                        transform: scale(3);
+                        opacity: 0.7;
+                    }
+                    100% {
+                        transform: scale(5);
+                        opacity: 0;
+                    }
                 }
             </style>
         </head>
@@ -748,15 +734,6 @@ function createSplashWindow() {
                     }
                 }, 300);
                 
-                let logoRotation = 0;
-                const logo = document.querySelector('.logo-image') || document.querySelector('.logo-text');
-                if (logo) {
-                    setInterval(() => {
-                        logoRotation += 0.05;
-                        logo.style.transform = \`rotate(\${logoRotation}deg)\`;
-                    }, 50);
-                }
-                
                 let currentProgress = 0;
                 const progressBar = document.querySelector('.loading-progress');
                 
@@ -766,14 +743,23 @@ function createSplashWindow() {
                         progressBar.style.width = currentProgress + '%';
                     } else {
                         clearInterval(progressInterval);
+                        setTimeout(() => {
+                            const logoContainer = document.querySelector('.logo-container');
+                            const loadingContainer = document.querySelector('.loading-container');
+                            const backgroundGlow = document.querySelector('.background-glow');
+                            const particles = document.querySelector('.floating-particles');
+                            
+                            logoContainer.style.animation = 'epicZoom 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards';
+                            loadingContainer.style.animation = 'epicZoom 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards';
+                            backgroundGlow.style.animation = 'epicZoom 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards';
+                            particles.style.animation = 'epicZoom 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards';
+                            
+                            setTimeout(() => {
+                                window.require('electron').ipcRenderer.send('zoom-out-splash');
+                            }, 800);
+                        }, 300);
                     }
                 }, 30);
-                
-                setTimeout(() => {
-                    // Запускаем плавное исчезновение самого окна загрузки
-                    // через Electron API, а не CSS анимацию
-                    window.require('electron').ipcRenderer.send('fade-out-splash');
-                }, 3800);
             </script>
         </body>
         </html>
@@ -785,12 +771,11 @@ function createSplashWindow() {
         splashWindow.show();
     });
     
-    // Обработчик плавного исчезновения окна анимации
-    require('electron').ipcMain.on('fade-out-splash', () => {
+    require('electron').ipcMain.on('zoom-out-splash', () => {
         if (splashWindow && !splashWindow.isDestroyed()) {
             let opacity = 1;
             const fadeInterval = setInterval(() => {
-                opacity -= 0.05; // Плавное уменьшение прозрачности
+                opacity -= 0.05;
                 if (opacity <= 0) {
                     opacity = 0;
                     clearInterval(fadeInterval);
@@ -803,8 +788,6 @@ function createSplashWindow() {
     
     splashWindow.on('closed', () => {
         splashWindow = null;
-        
-        // Показываем основное окно после завершения анимации
         setTimeout(() => {
             if (win && !win.isDestroyed()) {
                 win.show();
