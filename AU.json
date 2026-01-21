@@ -296,6 +296,7 @@ function createSplashWindow() {
         fullscreenable: true,
         show: false,
         focusable: false,
+        opacity: 1,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false
@@ -547,7 +548,6 @@ function createSplashWindow() {
                     opacity: 0;
                     animation: loading 3s cubic-bezier(0.25, 0.46, 0.45, 0.94) 1.2s forwards, 
                                fadeInProgress 0.5s ease-out 1.2s forwards;
-                    transition: width 0.1s linear;
                 }
                 
                 .loading-text {
@@ -717,15 +717,6 @@ function createSplashWindow() {
                     from { opacity: 0; }
                     to { opacity: 1; }
                 }
-                
-                @keyframes fadeOut {
-                    from {
-                        opacity: 1;
-                    }
-                    to {
-                        opacity: 0;
-                    }
-                }
             </style>
         </head>
         <body>
@@ -803,36 +794,22 @@ function createSplashWindow() {
                     }, 50);
                 }
                 
-                let progressBar = document.querySelector('.loading-progress');
                 let currentProgress = 0;
-                let targetProgress = 100;
-                let lastTime = 0;
+                const progressBar = document.querySelector('.loading-progress');
                 
-                function animateProgress(timestamp) {
-                    if (!lastTime) lastTime = timestamp;
-                    const deltaTime = timestamp - lastTime;
-                    
-                    if (currentProgress < targetProgress) {
-                        currentProgress += (deltaTime * 0.05);
-                        if (currentProgress > targetProgress) currentProgress = targetProgress;
-                        
+                const progressInterval = setInterval(() => {
+                    if (currentProgress < 100) {
+                        currentProgress += 0.5;
                         progressBar.style.width = currentProgress + '%';
+                    } else {
+                        clearInterval(progressInterval);
                     }
-                    
-                    lastTime = timestamp;
-                    requestAnimationFrame(animateProgress);
-                }
+                }, 30);
                 
                 setTimeout(() => {
-                    requestAnimationFrame(animateProgress);
-                }, 1200);
-                
-                setTimeout(() => {
-                    document.body.style.animation = 'fadeOut 1.2s ease forwards';
-                    
-                    setTimeout(() => {
-                        window.close();
-                    }, 1200);
+                    // Запускаем плавное исчезновение самого окна загрузки
+                    // через Electron API, а не CSS анимацию
+                    window.require('electron').ipcRenderer.send('fade-out-splash');
                 }, 3800);
             </script>
         </body>
@@ -845,24 +822,29 @@ function createSplashWindow() {
         splashWindow.show();
     });
     
+    // Обработчик плавного исчезновения окна анимации
+    require('electron').ipcMain.on('fade-out-splash', () => {
+        if (splashWindow && !splashWindow.isDestroyed()) {
+            let opacity = 1;
+            const fadeInterval = setInterval(() => {
+                opacity -= 0.05; // Плавное уменьшение прозрачности
+                if (opacity <= 0) {
+                    opacity = 0;
+                    clearInterval(fadeInterval);
+                    splashWindow.close();
+                }
+                splashWindow.setOpacity(opacity);
+            }, 30);
+        }
+    });
+    
     splashWindow.on('closed', () => {
         splashWindow = null;
         
+        // Показываем основное окно после завершения анимации
         setTimeout(() => {
             if (win && !win.isDestroyed()) {
-                win.setOpacity(0);
                 win.show();
-                
-                let opacity = 0;
-                const fadeInInterval = setInterval(() => {
-                    opacity += 0.01;
-                    win.setOpacity(opacity);
-                    
-                    if (opacity >= 1) {
-                        clearInterval(fadeInInterval);
-                        win.setOpacity(1);
-                    }
-                }, 16);
             }
         }, 100);
     });
@@ -1077,8 +1059,7 @@ async function createWindow() {
         frame: false,
         backgroundColor: '#000000',
         alwaysOnTop: config.alwaysOnTop ? 'screen-saver' : false,
-        skipTaskbar: true,
-        opacity: 0
+        skipTaskbar: true
     };
 
     if (config.isFreeWindow && config.freeWindowBounds) {
@@ -1359,7 +1340,6 @@ app.whenReady().then(async () => {
     if (config.showSplash !== false) {
         createSplashWindow();
     } else {
-        win.setOpacity(1);
         win.show();
     }
     
