@@ -8,7 +8,7 @@ let splashWindow;
 let config = {};
 let notificationWindows = [];
 let trayContextMenu;
-let isAppWindowCreated = false;
+let isMainWindowLoaded = false;
 
 app.name = 'Nuro';
 
@@ -807,8 +807,6 @@ function createSplashWindow() {
                 }, 30);
                 
                 setTimeout(() => {
-                    // Запускаем плавное исчезновение самого окна загрузки
-                    // через Electron API, а не CSS анимацию
                     window.require('electron').ipcRenderer.send('fade-out-splash');
                 }, 3800);
             </script>
@@ -822,12 +820,11 @@ function createSplashWindow() {
         splashWindow.show();
     });
     
-    // Обработчик плавного исчезновения окна анимации
     require('electron').ipcMain.on('fade-out-splash', () => {
         if (splashWindow && !splashWindow.isDestroyed()) {
             let opacity = 1;
             const fadeInterval = setInterval(() => {
-                opacity -= 0.05; // Плавное уменьшение прозрачности
+                opacity -= 0.05;
                 if (opacity <= 0) {
                     opacity = 0;
                     clearInterval(fadeInterval);
@@ -840,13 +837,9 @@ function createSplashWindow() {
     
     splashWindow.on('closed', () => {
         splashWindow = null;
-        
-        // Показываем основное окно после завершения анимации
-        setTimeout(() => {
-            if (win && !win.isDestroyed()) {
-                win.show();
-            }
-        }, 100);
+        if (win && !win.isDestroyed() && isMainWindowLoaded) {
+            win.show();
+        }
     });
 }
 
@@ -1035,8 +1028,6 @@ function toggleFreeWindow() {
 }
 
 async function createWindow() {
-    isAppWindowCreated = true;
-    
     const configUrl = await fetchConfig();
     if (!configUrl) {
         showConnectionError();
@@ -1091,6 +1082,7 @@ async function createWindow() {
     win.loadURL(configUrl);
 
     win.webContents.on("did-finish-load", () => {
+        isMainWindowLoaded = true;
         const dragRegion = config.isFreeWindow ? 'drag' : 'no-drag';
         win.webContents.insertCSS(`
             html, body {
