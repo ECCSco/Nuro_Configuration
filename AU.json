@@ -281,10 +281,10 @@ function createIconTransitionWindow() {
     const { bounds } = primaryDisplay;
     
     iconTransitionWindow = new BrowserWindow({
-        width: 220,
-        height: 220,
-        x: Math.floor(bounds.x + bounds.width / 2 - 110),
-        y: Math.floor(bounds.y + bounds.height / 2 - 110),
+        width: bounds.width,
+        height: bounds.height,
+        x: bounds.x,
+        y: bounds.y,
         frame: false,
         transparent: true,
         alwaysOnTop: true,
@@ -353,6 +353,7 @@ function createIconTransitionWindow() {
                 }
                 
                 html, body {
+                    width: 100%;
                     height: 100%;
                     overflow: hidden;
                     background: transparent;
@@ -367,11 +368,16 @@ function createIconTransitionWindow() {
                     display: flex;
                     justify-content: center;
                     align-items: center;
+                    margin: 0;
+                    padding: 0;
                 }
                 
-                .icon-container {
+                .icon-wrapper {
+                    position: absolute;
                     width: 180px;
                     height: 180px;
+                    top: calc(50% - 90px);
+                    left: calc(50% - 90px);
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -410,48 +416,45 @@ function createIconTransitionWindow() {
                     }
                 }
                 
-                @keyframes fadeOutIcon {
-                    from { opacity: 1; }
-                    to { opacity: 0; }
+                @keyframes moveAndFade {
+                    0% {
+                        top: calc(50% - 90px);
+                        left: calc(50% - 90px);
+                        transform: scale(1);
+                        opacity: 1;
+                    }
+                    100% {
+                        top: var(--target-y, 50%);
+                        left: var(--target-x, 50%);
+                        transform: scale(0.6);
+                        opacity: 0;
+                    }
                 }
             </style>
         </head>
         <body>
-            <div class="icon-container">
+            <div class="icon-wrapper">
                 ${iconBase64 ? `<img class="icon-image" src="data:image/x-icon;base64,${iconBase64}" />` : ''}
             </div>
             <script>
                 window.startMoveAnimation = function(targetX, targetY, targetWidth, targetHeight) {
-                    const iconContainer = document.querySelector('.icon-container');
+                    const iconWrapper = document.querySelector('.icon-wrapper');
                     const body = document.body;
                     
-                    const startX = window.screenX + 110;
-                    const startY = window.screenY + 110;
                     const targetCenterX = targetX + targetWidth / 2;
                     const targetCenterY = targetY + targetHeight / 2;
                     
-                    const diffX = targetCenterX - startX;
-                    const diffY = targetCenterY - startY;
+                    const iconRect = iconWrapper.getBoundingClientRect();
+                    const targetXPos = targetCenterX - 90;
+                    const targetYPos = targetCenterY - 90;
                     
-                    body.style.transition = 'transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease-out';
-                    body.style.transform = \`translate(\${diffX}px, \${diffY}px) scale(0.6)\`;
-                    
-                    setTimeout(() => {
-                        iconContainer.style.animation = 'fadeOutIcon 0.8s ease-out forwards';
-                        
-                        setTimeout(() => {
-                            window.close();
-                        }, 800);
-                    }, 1200);
-                };
-                
-                window.fadeOutIcon = function() {
-                    const iconContainer = document.querySelector('.icon-container');
-                    iconContainer.style.animation = 'fadeOutIcon 0.8s ease-out forwards';
+                    iconWrapper.style.setProperty('--target-x', targetXPos + 'px');
+                    iconWrapper.style.setProperty('--target-y', targetYPos + 'px');
+                    iconWrapper.style.animation = 'moveAndFade 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards';
                     
                     setTimeout(() => {
                         window.close();
-                    }, 800);
+                    }, 1200);
                 };
             </script>
         </body>
@@ -1217,32 +1220,30 @@ function createSplashWindow() {
             createIconTransitionWindow();
             
             setTimeout(() => {
-                if (iconTransitionWindow && !iconTransitionWindow.isDestroyed()) {
-                    if (win && !win.isDestroyed()) {
-                        const winBounds = win.getBounds();
-                        
-                        iconTransitionWindow.webContents.executeJavaScript(`
-                            window.startMoveAnimation(${winBounds.x}, ${winBounds.y}, ${winBounds.width}, ${winBounds.height});
-                        `).catch(() => {});
-                        
-                        setTimeout(() => {
-                            if (win && !win.isDestroyed()) {
-                                win.setOpacity(0);
-                                win.show();
+                if (iconTransitionWindow && !iconTransitionWindow.isDestroyed() && win && !win.isDestroyed()) {
+                    const winBounds = win.getBounds();
+                    
+                    iconTransitionWindow.webContents.executeJavaScript(`
+                        window.startMoveAnimation(${winBounds.x}, ${winBounds.y}, ${winBounds.width}, ${winBounds.height});
+                    `).catch(() => {});
+                    
+                    setTimeout(() => {
+                        if (win && !win.isDestroyed()) {
+                            win.setOpacity(0);
+                            win.show();
+                            
+                            let opacity = 0;
+                            const fadeInInterval = setInterval(() => {
+                                opacity += 0.05;
+                                win.setOpacity(opacity);
                                 
-                                let opacity = 0;
-                                const fadeInInterval = setInterval(() => {
-                                    opacity += 0.05;
-                                    win.setOpacity(opacity);
-                                    
-                                    if (opacity >= 1) {
-                                        clearInterval(fadeInInterval);
-                                        win.setOpacity(1);
-                                    }
-                                }, 30);
-                            }
-                        }, 2200);
-                    }
+                                if (opacity >= 1) {
+                                    clearInterval(fadeInInterval);
+                                    win.setOpacity(1);
+                                }
+                            }, 30);
+                        }
+                    }, 400);
                 }
             }, 500);
         }, 100);
