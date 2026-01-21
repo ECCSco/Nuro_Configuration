@@ -305,6 +305,16 @@ function createSplashWindow() {
     splashWindow.setAlwaysOnTop(true, 'screen-saver');
     splashWindow.setVisibleOnAllWorkspaces(true);
     
+    const iconPath = path.join(__dirname, 'NuroIcon.ico');
+    let iconBase64 = '';
+    
+    try {
+        const iconBuffer = fs.readFileSync(iconPath);
+        iconBase64 = iconBuffer.toString('base64');
+    } catch (error) {
+        console.error('Error loading icon:', error);
+    }
+    
     const splashHTML = `
         <!DOCTYPE html>
         <html>
@@ -389,9 +399,20 @@ function createSplashWindow() {
                     justify-content: center;
                 }
                 
+                .logo-image {
+                    width: 180px;
+                    height: 180px;
+                    opacity: 0;
+                    animation: fadeInLogo 1s ease-out 0.3s forwards, logoFloat 4s ease-in-out infinite;
+                    filter: drop-shadow(0 0 30px rgba(100, 181, 246, 0.6)) 
+                           drop-shadow(0 0 20px rgba(255, 183, 77, 0.6));
+                    z-index: 10;
+                    position: relative;
+                }
+                
                 .logo-text {
-                    font-size: 140px;
-                    font-weight: 900;
+                    font-size: 48px;
+                    font-weight: 700;
                     background: linear-gradient(
                         135deg,
                         var(--accent-blue) 0%,
@@ -402,15 +423,15 @@ function createSplashWindow() {
                     -webkit-background-clip: text;
                     background-clip: text;
                     color: transparent;
-                    letter-spacing: 8px;
+                    letter-spacing: 2px;
                     text-transform: uppercase;
                     position: relative;
                     text-align: center;
                     line-height: 1;
                     opacity: 0;
-                    filter: drop-shadow(0 0 30px rgba(100, 181, 246, 0.6)) 
-                           drop-shadow(0 0 20px rgba(255, 183, 77, 0.6));
-                    animation: gradientShift 6s ease infinite, logoFloat 4s ease-in-out infinite, fadeInLogo 1s ease-out 0.3s forwards;
+                    margin-top: 20px;
+                    animation: gradientShift 6s ease infinite, fadeInText 1s ease-out 0.5s forwards;
+                    z-index: 10;
                 }
                 
                 .logo-glow {
@@ -426,8 +447,8 @@ function createSplashWindow() {
                     background-size: 300% 300%;
                     filter: blur(60px);
                     opacity: 0;
-                    z-index: -1;
-                    animation: gradientShift 6s ease infinite, glowPulse 3s ease-in-out infinite, fadeInGlow 1s ease-out 0.2s forwards;
+                    z-index: 5;
+                    animation: gradientShift 6s ease infinite, fadeInGlow 1s ease-out 0.2s forwards;
                 }
                 
                 .energy-ring {
@@ -518,7 +539,12 @@ function createSplashWindow() {
                 }
                 
                 @keyframes fadeInLogo {
-                    from { opacity: 0; transform: translateY(20px); }
+                    from { opacity: 0; transform: translateY(20px) scale(0.9); }
+                    to { opacity: 1; transform: translateY(0) scale(1); }
+                }
+                
+                @keyframes fadeInText {
+                    from { opacity: 0; transform: translateY(10px); }
                     to { opacity: 1; transform: translateY(0); }
                 }
                 
@@ -557,15 +583,6 @@ function createSplashWindow() {
                     }
                     50% {
                         transform: translateY(-15px) scale(1.03);
-                    }
-                }
-                
-                @keyframes glowPulse {
-                    0%, 100% {
-                        opacity: 0.5;
-                    }
-                    50% {
-                        opacity: 0.8;
                     }
                 }
                 
@@ -614,7 +631,8 @@ function createSplashWindow() {
             
             <div class="logo-container">
                 <div class="logo-glow"></div>
-                <div class="logo-text">NURO</div>
+                ${iconBase64 ? `<img class="logo-image" src="data:image/x-icon;base64,${iconBase64}" />` : '<div class="logo-text">NURO</div>'}
+                ${iconBase64 ? '<div class="logo-text">NURO</div>' : ''}
                 <div class="energy-ring">
                     <div class="ring-segment"></div>
                     <div class="ring-segment"></div>
