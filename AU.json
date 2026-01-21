@@ -851,7 +851,7 @@ function getWindowPosition() {
     const display = screen.getPrimaryDisplay();
     const { bounds, workArea } = display;
     
-    const width = config.width || 400;
+    const width = 400;
     const side = config.side || 'right';
     const height = Math.floor(bounds.height / 2);
     
@@ -943,8 +943,8 @@ function toggleFreeWindow() {
 
     if (win && !win.isDestroyed()) {
         if (newValue) {
-            if (win.isMaximized()) win.unmaximize();
-            if (win.isFullScreen()) win.setFullScreen(false);
+            win.setFullScreen(false);
+            win.unmaximize();
             
             const currentBounds = win.getBounds();
             saveConfig({ 
@@ -989,7 +989,7 @@ function toggleFreeWindow() {
             `).catch(() => {});
             
             delete config.freeWindowBounds;
-            saveConfig({ freeWindowBounds: null });
+            saveConfig({ width: 400, freeWindowBounds: null });
         }
     }
     
