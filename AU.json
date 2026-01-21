@@ -8,7 +8,6 @@ let splashWindow;
 let config = {};
 let notificationWindows = [];
 let trayContextMenu;
-let isMainWindowLoaded = false;
 
 app.name = 'Nuro';
 
@@ -837,7 +836,7 @@ function createSplashWindow() {
     
     splashWindow.on('closed', () => {
         splashWindow = null;
-        if (win && !win.isDestroyed() && isMainWindowLoaded) {
+        if (win && !win.isDestroyed()) {
             win.show();
         }
     });
@@ -1082,7 +1081,6 @@ async function createWindow() {
     win.loadURL(configUrl);
 
     win.webContents.on("did-finish-load", () => {
-        isMainWindowLoaded = true;
         const dragRegion = config.isFreeWindow ? 'drag' : 'no-drag';
         win.webContents.insertCSS(`
             html, body {
