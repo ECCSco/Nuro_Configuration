@@ -655,17 +655,22 @@ function createSplashWindow() {
                     to { opacity: 1; }
                 }
 
-                @keyframes epicZoom {
+                @keyframes smoothZoom {
                     0% {
                         transform: scale(1);
                         opacity: 1;
                     }
-                    50% {
-                        transform: scale(3);
-                        opacity: 0.7;
+                    100% {
+                        transform: scale(1.2);
+                        opacity: 0;
+                    }
+                }
+
+                @keyframes gentleFadeOut {
+                    0% {
+                        opacity: 1;
                     }
                     100% {
-                        transform: scale(5);
                         opacity: 0;
                     }
                 }
@@ -746,16 +751,12 @@ function createSplashWindow() {
                         setTimeout(() => {
                             const logoContainer = document.querySelector('.logo-container');
                             const loadingContainer = document.querySelector('.loading-container');
-                            const backgroundGlow = document.querySelector('.background-glow');
-                            const particles = document.querySelector('.floating-particles');
                             
-                            logoContainer.style.animation = 'epicZoom 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards';
-                            loadingContainer.style.animation = 'epicZoom 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards';
-                            backgroundGlow.style.animation = 'epicZoom 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards';
-                            particles.style.animation = 'epicZoom 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards';
+                            logoContainer.style.animation = 'smoothZoom 0.8s ease-out forwards';
+                            loadingContainer.style.animation = 'gentleFadeOut 0.8s ease-out forwards';
                             
                             setTimeout(() => {
-                                window.require('electron').ipcRenderer.send('zoom-out-splash');
+                                window.require('electron').ipcRenderer.send('splash-complete');
                             }, 800);
                         }, 300);
                     }
@@ -771,7 +772,7 @@ function createSplashWindow() {
         splashWindow.show();
     });
     
-    require('electron').ipcMain.on('zoom-out-splash', () => {
+    require('electron').ipcMain.on('splash-complete', () => {
         if (splashWindow && !splashWindow.isDestroyed()) {
             let opacity = 1;
             const fadeInterval = setInterval(() => {
