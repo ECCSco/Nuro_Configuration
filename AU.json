@@ -770,6 +770,9 @@ function toggleFreeWindow() {
 
     if (win && !win.isDestroyed()) {
         if (newValue) {
+            if (win.isMaximized()) win.unmaximize();
+            if (win.isFullScreen()) win.setFullScreen(false);
+            
             const currentBounds = win.getBounds();
             saveConfig({ 
                 freeWindowBounds: {
@@ -793,6 +796,9 @@ function toggleFreeWindow() {
                 document.head.appendChild(style);
             `).catch(() => {});
         } else {
+            if (win.isMaximized()) win.unmaximize();
+            if (win.isFullScreen()) win.setFullScreen(false);
+            
             win.setMovable(false);
             win.setResizable(false);
             win.setMinimizable(true);
@@ -956,8 +962,10 @@ async function createWindow() {
         if (config.alwaysOnTop) {
             win.setAlwaysOnTop(true, 'screen-saver');
             win.setVisibleOnAllWorkspaces(true);
-            const bounds = getWindowPosition();
-            win.setBounds(bounds);
+            if (!config.isFreeWindow) {
+                const bounds = getWindowPosition();
+                win.setBounds(bounds);
+            }
         }
     });
 }
