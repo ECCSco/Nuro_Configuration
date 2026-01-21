@@ -477,41 +477,7 @@ function createSplashWindow() {
                         0 0 20px rgba(100, 181, 246, 0.3);
                     z-index: 15;
                 }
-                
-                .energy-ring {
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    border-radius: 50%;
-                    border: 1px solid transparent;
-                    animation: ringRotate 30s linear infinite;
-                    opacity: 0;
-                    animation-fill-mode: forwards;
-                }
-                
-                .ring-1 {
-                    width: 600px;
-                    height: 600px;
-                    border-top-color: var(--accent-blue);
-                    border-right-color: var(--accent-blue);
-                    animation-delay: 0.3s;
-                    animation-name: ringRotate, fadeInRing;
-                    animation-duration: 30s, 1s;
-                }
-                
-                .ring-2 {
-                    width: 700px;
-                    height: 700px;
-                    border-top-color: var(--accent-orange);
-                    border-right-color: var(--accent-orange);
-                    animation-delay: 0.5s;
-                    animation-duration: 35s;
-                    animation-direction: reverse;
-                    animation-name: ringRotateReverse, fadeInRing;
-                    animation-duration: 35s, 1s;
-                }
-                
+
                 .loading-container {
                     position: absolute;
                     bottom: 100px;
@@ -723,10 +689,7 @@ function createSplashWindow() {
             <div class="background-glow"></div>
             
             <div class="floating-particles" id="particles"></div>
-            
-            <div class="energy-ring ring-1"></div>
-            <div class="energy-ring ring-2"></div>
-            
+
             <div class="logo-container">
                 <div class="logo-wrapper">
                     <div class="logo-glow"></div>
