@@ -18,7 +18,10 @@ function loadConfig() {
     try {
         if (fs.existsSync(configPath)) {
             const configData = fs.readFileSync(configPath, 'utf8');
-            return JSON.parse(configData);
+            const loadedConfig = JSON.parse(configData);
+            if (loadedConfig.width && loadedConfig.width < 300) loadedConfig.width = 300;
+            if (loadedConfig.freeWindowBounds && loadedConfig.freeWindowBounds.width < 300) loadedConfig.freeWindowBounds.width = 300;
+            return loadedConfig;
         }
     } catch (error) {
         console.error('Error loading config:', error);
@@ -851,7 +854,7 @@ function getWindowPosition() {
     const display = screen.getPrimaryDisplay();
     const { bounds, workArea } = display;
     
-    const width = config.width || 400;
+    const width = Math.max(config.width || 400, 300);
     const side = config.side || 'right';
     const height = Math.floor(bounds.height / 2);
     
@@ -947,6 +950,7 @@ function toggleFreeWindow() {
             if (win.isFullScreen()) win.setFullScreen(false);
             
             const currentBounds = win.getBounds();
+            if (currentBounds.width < 300) currentBounds.width = 300;
             saveConfig({ 
                 freeWindowBounds: {
                     x: currentBounds.x,
@@ -979,8 +983,8 @@ function toggleFreeWindow() {
             
             const bounds = getWindowPosition();
             win.setBounds(bounds);
-            win.setMinimumSize(bounds.width, bounds.height);
-            win.setMaximumSize(bounds.width, bounds.height);
+            win.setMinimumSize(Math.max(bounds.width, 300), bounds.height);
+            win.setMaximumSize(Math.max(bounds.width, 300), bounds.height);
             
             win.webContents.executeJavaScript(`
                 const style = document.createElement('style');
@@ -989,7 +993,7 @@ function toggleFreeWindow() {
             `).catch(() => {});
             
             delete config.freeWindowBounds;
-            saveConfig({ freeWindowBounds: null, width: 400 });
+            saveConfig({ freeWindowBounds: null, width: Math.max(bounds.width, 300) });
         }
     }
     
@@ -1025,6 +1029,7 @@ async function createWindow() {
     };
 
     if (config.isFreeWindow && config.freeWindowBounds) {
+        if (config.freeWindowBounds.width < 300) config.freeWindowBounds.width = 300;
         Object.assign(windowOptions, config.freeWindowBounds);
         windowOptions.resizable = true;
         windowOptions.movable = true;
@@ -1037,8 +1042,8 @@ async function createWindow() {
         Object.assign(windowOptions, bounds);
         windowOptions.resizable = false;
         windowOptions.movable = false;
-        windowOptions.minWidth = bounds.width;
-        windowOptions.maxWidth = bounds.width;
+        windowOptions.minWidth = Math.max(bounds.width, 300);
+        windowOptions.maxWidth = Math.max(bounds.width, 300);
         windowOptions.minHeight = bounds.height;
         windowOptions.maxHeight = bounds.height;
     }
@@ -1106,6 +1111,7 @@ async function createWindow() {
     win.on('resize', () => {
         const bounds = win.getBounds();
         if (config.isFreeWindow) {
+            if (bounds.width < 300) bounds.width = 300;
             saveConfig({ 
                 freeWindowBounds: {
                     x: bounds.x,
@@ -1116,8 +1122,8 @@ async function createWindow() {
             });
         } else {
             if (bounds.width !== config.width) {
-                config.width = bounds.width;
-                saveConfig({ width: bounds.width });
+                config.width = Math.max(bounds.width, 300);
+                saveConfig({ width: config.width });
             }
         }
     });
@@ -1125,6 +1131,7 @@ async function createWindow() {
     win.on('move', () => {
         if (config.isFreeWindow) {
             const bounds = win.getBounds();
+            if (bounds.width < 300) bounds.width = 300;
             saveConfig({ 
                 freeWindowBounds: {
                     x: bounds.x,
