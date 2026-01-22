@@ -770,8 +770,6 @@ function createSplashWindow() {
                 }, 30);
                 
                 setTimeout(() => {
-                    // Запускаем плавное исчезновение самого окна загрузки
-                    // через Electron API, а не CSS анимацию
                     window.require('electron').ipcRenderer.send('fade-out-splash');
                 }, 3800);
             </script>
@@ -785,12 +783,11 @@ function createSplashWindow() {
         splashWindow.show();
     });
     
-    // Обработчик плавного исчезновения окна анимации
     require('electron').ipcMain.on('fade-out-splash', () => {
         if (splashWindow && !splashWindow.isDestroyed()) {
             let opacity = 1;
             const fadeInterval = setInterval(() => {
-                opacity -= 0.05; // Плавное уменьшение прозрачности
+                opacity -= 0.05;
                 if (opacity <= 0) {
                     opacity = 0;
                     clearInterval(fadeInterval);
@@ -803,8 +800,6 @@ function createSplashWindow() {
     
     splashWindow.on('closed', () => {
         splashWindow = null;
-        
-        // Показываем основное окно после завершения анимации
         setTimeout(() => {
             if (win && !win.isDestroyed()) {
                 win.show();
@@ -974,13 +969,14 @@ function toggleFreeWindow() {
                 document.head.appendChild(style);
             `).catch(() => {});
         } else {
-            if (win.isMaximized()) win.unmaximize();
-            if (win.isFullScreen()) win.setFullScreen(false);
+            win.setFullScreen(false);
+            win.unmaximize();
             
             win.setMovable(false);
             win.setResizable(false);
             win.setMinimizable(true);
             win.setMaximizable(false);
+            
             const bounds = getWindowPosition();
             win.setBounds(bounds);
             win.setMinimumSize(bounds.width, bounds.height);
@@ -991,6 +987,9 @@ function toggleFreeWindow() {
                 style.textContent = 'body::before { -webkit-app-region: no-drag !important; }';
                 document.head.appendChild(style);
             `).catch(() => {});
+            
+            delete config.freeWindowBounds;
+            saveConfig({ freeWindowBounds: null, width: 400 });
         }
     }
     
