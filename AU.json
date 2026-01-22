@@ -23,7 +23,7 @@ function loadConfig() {
     } catch (error) {
         console.error('Error loading config:', error);
     }
-    return { width: 400, side: 'right', alwaysOnTop: true, isFreeWindow: false, showSplash: true };
+    return { width: 300, side: 'right', alwaysOnTop: true, isFreeWindow: false, showSplash: true };
 }
 
 function saveConfig(newConfig) {
